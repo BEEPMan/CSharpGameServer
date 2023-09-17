@@ -33,18 +33,10 @@ namespace ServerCore
             RegisterAccept(args);
         }
 
-        public async Task<Socket> AcceptAsync()
-        {
-            return await _listenSocket.AcceptAsync();
-        }
-
-        public Socket Accept()
-        {
-            return _listenSocket.Accept();
-        }
-
         void RegisterAccept(SocketAsyncEventArgs args)
         {
+            args.AcceptSocket = null;
+
             bool pending = _listenSocket.AcceptAsync(args);
             if(pending == false)
             {

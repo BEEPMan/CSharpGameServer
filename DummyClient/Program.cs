@@ -14,35 +14,43 @@ namespace DummyClient
             IPAddress iPAddress = iPHostEntry.AddressList[0];
             IPEndPoint localEndPoint = new IPEndPoint(iPAddress, 7777);
 
-            // TCP Socket
-            Socket socket = new(
-                iPAddress.AddressFamily,
-                SocketType.Stream,
-                ProtocolType.Tcp);
-
-            try
+            while(true)
             {
-                // Connect
-                socket.Connect(localEndPoint);
-                Console.WriteLine($"Connected To {socket.RemoteEndPoint}");
+                // TCP Socket
+                Socket socket = new(
+                    iPAddress.AddressFamily,
+                    SocketType.Stream,
+                    ProtocolType.Tcp);
 
-                // Send message
-                byte[] sendBuffer = Encoding.UTF8.GetBytes("Hello World!");
-                int sendBytes = socket.Send(sendBuffer);
+                try
+                {
+                    // Connect
+                    socket.Connect(localEndPoint);
+                    Console.WriteLine($"Connected To {socket.RemoteEndPoint}");
 
-                // Receive message
-                byte[] recvBuffer = new byte[1024];
-                int recvBytes = socket.Receive(recvBuffer);
-                string recvData = Encoding.UTF8.GetString(recvBuffer, 0, recvBytes);
-                Console.WriteLine($"[From Server] {recvData}");
+                    for(int i=0; i<5; i++)
+                    {
+                        // Send message
+                        byte[] sendBuffer = Encoding.UTF8.GetBytes("Hello World!");
+                        int sendBytes = socket.Send(sendBuffer);
+                    }
 
-                // Disconnect
-                socket.Shutdown(SocketShutdown.Both);
-                socket.Close();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
+                    // Receive message
+                    byte[] recvBuffer = new byte[1024];
+                    int recvBytes = socket.Receive(recvBuffer);
+                    string recvData = Encoding.UTF8.GetString(recvBuffer, 0, recvBytes);
+                    Console.WriteLine($"[From Server] {recvData}");
+
+                    // Disconnect
+                    socket.Shutdown(SocketShutdown.Both);
+                    socket.Close();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.ToString());
+                }
+
+                Thread.Sleep(100);
             }
         }
     }
