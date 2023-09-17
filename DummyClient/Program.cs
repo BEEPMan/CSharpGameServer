@@ -2,55 +2,59 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace DummyClient
 {
     class Program
     {
-        static void Main(string[] args)
+        private static readonly int PORT = 7777;
+        private static readonly string SERVER_IP = "127.0.0.1";
+        private static Socket _clientSocket;
+        private static byte[] _buffer;
+
+        static async Task Main(string[] args)
         {
-            // DNS (Domain Name System) & IP Endpoint
-            IPHostEntry iPHostEntry = Dns.GetHostEntry(Dns.GetHostName());
-            IPAddress iPAddress = iPHostEntry.AddressList[0];
-            IPEndPoint localEndPoint = new IPEndPoint(iPAddress, 7777);
+            _clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _buffer = new byte[1024];
 
-            while(true)
+            try
             {
-                // TCP Socket
-                Socket socket = new(
-                    iPAddress.AddressFamily,
-                    SocketType.Stream,
-                    ProtocolType.Tcp);
+                await _clientSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(SERVER_IP), PORT));
+                Console.WriteLine("Connected to server.");
 
-                try
+                // Send initial message
+                await SendDataAsync("Hello, Server!");
+
+                // Start receiving data
+                await ReceiveDataAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error: {e.Message}");
+            }
+        }
+
+        static async Task SendDataAsync(string data)
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(data);
+            await _clientSocket.SendAsync(new ArraySegment<byte>(buffer), SocketFlags.None);
+        }
+
+        static async Task ReceiveDataAsync()
+        {
+            while (_clientSocket.Connected)
+            {
+                int received = await _clientSocket.ReceiveAsync(new ArraySegment<byte>(_buffer), SocketFlags.None);
+
+                if (received == 0)
                 {
-                    // Connect
-                    socket.Connect(localEndPoint);
-                    Console.WriteLine($"Connected To {socket.RemoteEndPoint}");
-
-                    for(int i=0; i<5; i++)
-                    {
-                        // Send message
-                        byte[] sendBuffer = Encoding.UTF8.GetBytes("Hello World!");
-                        int sendBytes = socket.Send(sendBuffer);
-                    }
-
-                    // Receive message
-                    byte[] recvBuffer = new byte[1024];
-                    int recvBytes = socket.Receive(recvBuffer);
-                    string recvData = Encoding.UTF8.GetString(recvBuffer, 0, recvBytes);
-                    Console.WriteLine($"[From Server] {recvData}");
-
-                    // Disconnect
-                    socket.Shutdown(SocketShutdown.Both);
-                    socket.Close();
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.ToString());
+                    Console.WriteLine("Server disconnected.");
+                    return;
                 }
 
-                Thread.Sleep(100);
+                string data = Encoding.UTF8.GetString(_buffer, 0, received);
+                Console.WriteLine($"Received from server: {data}");
             }
         }
     }

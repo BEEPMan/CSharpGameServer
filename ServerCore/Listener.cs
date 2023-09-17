@@ -1,61 +1,47 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ServerCore
 {
     class Listener
     {
-        Socket _listenSocket;
-        Action<Socket> _onAcceptHandler;
+        private Socket _listenSocket;
+        private int _port;
 
-        public void Init(IPEndPoint endPoint, Action<Socket> onAcceptHandler)
+        public Listener(int port)
         {
-            // TCP Socket
-            _listenSocket = new Socket(
-                endPoint.AddressFamily,
-                SocketType.Stream,
-                ProtocolType.Tcp);
+            _port = port;
+            _listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        }
 
-            // Bind & Listen
-            _listenSocket.Bind(endPoint);
+        public async Task StartAsync()
+        {
+            // 서버의 IP 주소와 포트 번호를 바인딩합니다.
+            _listenSocket.Bind(new IPEndPoint(IPAddress.Any, _port));
+
+            // 연결 요청을 수신 대기합니다.
             _listenSocket.Listen(10);
 
-            // Register Accept Event
-            _onAcceptHandler += onAcceptHandler;
-            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.Completed += new EventHandler<SocketAsyncEventArgs>
-                (OnAcceptCompleted);
-            RegisterAccept(args);
-        }
+            Console.WriteLine($"Server listening on port {_port}");
 
-        void RegisterAccept(SocketAsyncEventArgs args)
-        {
-            args.AcceptSocket = null;
+            while (true)
+            {
+                try
+                {
+                    // 클라이언트의 연결 요청을 비동기적으로 수락합니다.
+                    Socket clientSocket = await _listenSocket.AcceptAsync();
 
-            bool pending = _listenSocket.AcceptAsync(args);
-            if(pending == false)
-            {
-                OnAcceptCompleted(null, args);
+                    // 새로운 세션을 생성하고 초기화합니다.
+                    Session newSession = new Session(clientSocket);
+                    await newSession.ConnectAsync();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Error accepting client: {e.Message}");
+                }
             }
-        }
-
-        void OnAcceptCompleted(object sender, SocketAsyncEventArgs args)
-        {
-            if(args.SocketError == SocketError.Success)
-            {
-                // TODO
-                _onAcceptHandler.Invoke(args.AcceptSocket);
-            }
-            else
-            {
-                Console.WriteLine(args.SocketError.ToString());
-            }
-            RegisterAccept(args);
         }
     }
 }
