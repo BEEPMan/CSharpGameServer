@@ -28,19 +28,22 @@ namespace ServerCore
 
             while (true)
             {
-                try
+                new Task (async () =>
                 {
-                    // 클라이언트의 연결 요청을 비동기적으로 수락합니다.
-                    Socket clientSocket = await _listenSocket.AcceptAsync();
+                    try
+                    {
+                        // 클라이언트의 연결 요청을 비동기적으로 수락합니다.
+                        Socket clientSocket = await _listenSocket.AcceptAsync();
 
-                    // 새로운 세션을 생성하고 초기화합니다.
-                    Session newSession = new Session(clientSocket);
-                    await newSession.ConnectAsync();
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"Error accepting client: {e.Message}");
-                }
+                        // 새로운 세션을 생성하고 초기화합니다.
+                        Session newSession = new Session(clientSocket);
+                        await newSession.ConnectAsync();
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"Error accepting client: {e.Message}");
+                    }
+                }).Start();
             }
         }
     }
