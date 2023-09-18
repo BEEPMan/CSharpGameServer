@@ -23,11 +23,21 @@ namespace DummyClient
                 await _clientSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(SERVER_IP), PORT));
                 Console.WriteLine("Connected to server.");
 
-                // Send initial message
-                await SendDataAsync("Hello, Server!");
+                _ = ReceiveDataAsync();
 
-                // Start receiving data
-                await ReceiveDataAsync();
+                while(true)
+                {
+                    string data = Console.ReadLine();
+
+                    if (data != null)
+                    {
+                        // Send initial message
+                        await SendDataAsync(data);
+                    }
+
+                    // Start receiving data
+                    // await ReceiveDataAsync();
+                }
             }
             catch (Exception e)
             {
@@ -43,7 +53,7 @@ namespace DummyClient
 
         static async Task ReceiveDataAsync()
         {
-            while (_clientSocket.Connected)
+            while (true)
             {
                 int received = await _clientSocket.ReceiveAsync(new ArraySegment<byte>(_buffer), SocketFlags.None);
 
