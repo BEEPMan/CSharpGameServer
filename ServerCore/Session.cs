@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace ServerCore
 {
-    class Session
+    public abstract class Session
     {
         private Socket _clientSocket;
         private byte[] _buffer;
@@ -18,8 +19,6 @@ namespace ServerCore
         // 클라이언트와의 연결을 초기화합니다.
         public async Task ConnectAsync()
         {
-            Console.WriteLine("New session started.");
-
             // 데이터 수신을 시작합니다.
             await ReceiveDataAsync();
         }
@@ -40,10 +39,8 @@ namespace ServerCore
                     }
 
                     // 받은 데이터를 처리합니다. 여기서는 간단하게 콘솔에 출력합니다.
-                    string data = System.Text.Encoding.UTF8.GetString(_buffer, 0, received);
-                    Console.WriteLine($"Received data: {data}");
-
-                    await SendDataAsync(data);
+                    OnRecv(new ArraySegment<byte>(_buffer, 0, received));
+                    
                 }
                 catch (Exception e)
                 {
@@ -60,7 +57,9 @@ namespace ServerCore
             try
             {
                 byte[] buffer = System.Text.Encoding.UTF8.GetBytes(data);
-                await _clientSocket.SendAsync(new ArraySegment<byte>(buffer), SocketFlags.None);
+                int sent = await _clientSocket.SendAsync(new ArraySegment<byte>(buffer), SocketFlags.None);
+
+                OnSend(sent);
             }
             catch (Exception e)
             {
@@ -72,9 +71,17 @@ namespace ServerCore
         // 연결을 종료합니다.
         public void Disconnect()
         {
+            OnDisconnected(_clientSocket.RemoteEndPoint);
+            SessionManager.Instance.RemoveSession(this);
+
             _clientSocket.Shutdown(SocketShutdown.Both);
             _clientSocket.Close();
-            Console.WriteLine("Session terminated.");
         }
+
+        public abstract void OnConnected(EndPoint endPoint);
+        public abstract void OnRecv(ArraySegment<byte> buffer);
+        public abstract void OnSend(int numOfBytes);
+        public abstract void OnDisconnected(EndPoint endPoint);
+
     }
 }

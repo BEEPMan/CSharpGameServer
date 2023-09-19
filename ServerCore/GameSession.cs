@@ -1,0 +1,43 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ServerCore
+{
+    class GameSession : Session
+    {
+        public GameSession(Socket clientSocket) : base(clientSocket)
+        {
+        }
+
+        public override void OnConnected(EndPoint endPoint)
+        {
+            Console.WriteLine("New session started.");
+
+            SessionManager.Instance.BroadCast($"New client entered the server.");
+        }
+
+        public override void OnDisconnected(EndPoint endPoint)
+        {
+            Console.WriteLine("Session terminated.");
+        }
+
+        public override void OnRecv(ArraySegment<byte> buffer)
+        {
+            string data = System.Text.Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
+            Console.WriteLine($"Received data: {data}");
+
+            // SendDataAsync(data);
+            SessionManager.Instance.BroadCast($"[Client {SessionManager.Instance.GetSessionIndex(this)}] {data}");
+        }
+
+        public override void OnSend(int numOfBytes)
+        {
+            
+        }
+    }
+}

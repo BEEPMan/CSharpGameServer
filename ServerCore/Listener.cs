@@ -34,8 +34,10 @@ namespace ServerCore
                     Socket clientSocket = await _listenSocket.AcceptAsync();
 
                     // 새로운 세션을 생성하고 초기화합니다.
-                    Session newSession = new Session(clientSocket);
+                    GameSession newSession = new GameSession(clientSocket);
                     _ = newSession.ConnectAsync();
+                    newSession.OnConnected(clientSocket.RemoteEndPoint);
+                    SessionManager.Instance.AddSession(newSession);
                 }
                 catch (Exception e)
                 {
