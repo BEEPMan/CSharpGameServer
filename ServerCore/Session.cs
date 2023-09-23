@@ -9,11 +9,11 @@ namespace ServerCore
     {
         private Socket _clientSocket;
         private byte[] _buffer;
+        private RecvBuffer _recvBuffer = new RecvBuffer(1024);
 
         public Session(Socket clientSocket)
         {
             _clientSocket = clientSocket;
-            _buffer = new byte[1024];
         }
 
         // 클라이언트와의 연결을 초기화합니다.
@@ -30,16 +30,28 @@ namespace ServerCore
             {
                 try
                 {
-                    int received = await _clientSocket.ReceiveAsync(new ArraySegment<byte>(_buffer), SocketFlags.None);
+                    _recvBuffer.Clear();
+                    ArraySegment<byte> segment = _recvBuffer.WriteSegment;
+                    int received = await _clientSocket.ReceiveAsync(segment, SocketFlags.None);
 
-                    if (received == 0) // 연결 종료
+                    if(_recvBuffer.OnWrite(received) == false)
                     {
                         Disconnect();
                         return;
                     }
 
-                    // 받은 데이터를 처리합니다. 여기서는 간단하게 콘솔에 출력합니다.
-                    OnRecv(new ArraySegment<byte>(_buffer, 0, received));
+                    int processLen = OnRecv(_recvBuffer.ReadSegment);
+                    if(processLen < 0 || _recvBuffer.DataSize < processLen)
+                    {
+                        Disconnect();
+                        return;
+                    }
+
+                    if(_recvBuffer.OnRead(processLen) == false)
+                    {
+                        Disconnect();
+                        return;
+                    }
                     
                 }
                 catch (Exception e)
@@ -79,7 +91,7 @@ namespace ServerCore
         }
 
         public abstract void OnConnected(EndPoint endPoint);
-        public abstract void OnRecv(ArraySegment<byte> buffer);
+        public abstract int OnRecv(ArraySegment<byte> buffer);
         public abstract void OnSend(int numOfBytes);
         public abstract void OnDisconnected(EndPoint endPoint);
 

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ServerCore
 {
-    class Listener
+    public class Listener
     {
         private Socket _listenSocket;
         private int _port;

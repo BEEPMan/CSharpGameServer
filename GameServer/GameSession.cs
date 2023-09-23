@@ -5,8 +5,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using ServerCore;
 
-namespace ServerCore
+namespace GameServer
 {
     class GameSession : Session
     {
