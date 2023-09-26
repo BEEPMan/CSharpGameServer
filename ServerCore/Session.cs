@@ -1,10 +1,43 @@
-﻿using System;
+﻿using ProtoBuf;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace ServerCore
 {
+    public abstract class PacketSession : Session
+    {
+        protected PacketSession(Socket clientSocket) : base(clientSocket)
+        {
+        }
+
+        public override int OnRecv(ArraySegment<byte> buffer)
+        {
+            int processLen = 0;
+
+            while(true)
+            {
+                if(buffer.Count < sizeof(int))
+                    break;
+
+                int dataSize = BitConverter.ToInt16(buffer.Array, buffer.Offset);
+                if(buffer.Count < dataSize)
+                    break;
+
+                // 패킷 헤더를 제외한 패킷 데이터의 길이를 읽어옵니다.
+                OnRecvPacket(new ArraySegment<byte>(buffer.Array, buffer.Offset, dataSize));
+
+                processLen += dataSize;
+                buffer = new ArraySegment<byte>(buffer.Array, buffer.Offset + dataSize, buffer.Count - dataSize);
+            }
+
+            return processLen;
+        }
+
+        public abstract void OnRecvPacket(ArraySegment<byte> buffer);
+    }
+
     public abstract class Session
     {
         private Socket _clientSocket;
@@ -70,6 +103,21 @@ namespace ServerCore
             {
                 byte[] buffer = System.Text.Encoding.UTF8.GetBytes(data);
                 int sent = await _clientSocket.SendAsync(new ArraySegment<byte>(buffer), SocketFlags.None);
+
+                OnSend(sent);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error sending data: {e.Message}");
+                Disconnect();
+            }
+        }
+
+        public async Task SendDataAsync(byte[] data)
+        {
+            try
+            {
+                int sent = await _clientSocket.SendAsync(new ArraySegment<byte>(data), SocketFlags.None);
 
                 OnSend(sent);
             }

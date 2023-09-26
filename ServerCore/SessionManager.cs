@@ -43,6 +43,14 @@ namespace ServerCore
             }
         }
 
+        public void BroadCast(byte[] data)
+        {
+            foreach (Session session in sessions)
+            {
+                session.SendDataAsync(data);
+            }
+        }
+
         // 다른 관리 기능들
     }
 }

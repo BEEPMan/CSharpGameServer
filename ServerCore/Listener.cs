@@ -9,11 +9,13 @@ namespace ServerCore
     {
         private Socket _listenSocket;
         private int _port;
+        Func<Session> _sessionFactory;
 
-        public Listener(int port)
+        public Listener(int port, Func<Session> sessionFactory)
         {
             _port = port;
             _listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _sessionFactory += sessionFactory;
         }
 
         public async Task StartAsync()
@@ -34,7 +36,7 @@ namespace ServerCore
                     Socket clientSocket = await _listenSocket.AcceptAsync();
 
                     // 새로운 세션을 생성하고 초기화합니다.
-                    GameSession newSession = new GameSession(clientSocket);
+                    Session newSession = _sessionFactory.Invoke();
                     _ = newSession.ConnectAsync();
                     newSession.OnConnected(clientSocket.RemoteEndPoint);
                     SessionManager.Instance.AddSession(newSession);
