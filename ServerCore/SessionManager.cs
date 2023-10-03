@@ -20,6 +20,8 @@ namespace ServerCore
             }
         }
 
+        private int _sessionId = 0;
+
         public void AddSession(Session session)
         {
             sessions.Add(session);

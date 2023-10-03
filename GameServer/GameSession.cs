@@ -11,10 +11,6 @@ namespace GameServer
 {
     class GameSession : Session
     {
-        public GameSession(Socket clientSocket) : base(clientSocket)
-        {
-        }
-
         public override void OnConnected(EndPoint endPoint)
         {
             Console.WriteLine("New session started.");

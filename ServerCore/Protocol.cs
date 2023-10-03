@@ -8,8 +8,10 @@ namespace ServerCore
 {
     public enum PacketType
     {
-        LOGIN = 1,
-        CHAT = 2,
+        PKT_S_LOGIN = 1,
+        PKT_C_LOGIN = 2,
+        PKT_S_CHAT = 3,
+        PKT_C_CHAT = 4,
     }
 
     [ProtoBuf.ProtoContract]
@@ -26,9 +28,6 @@ namespace ServerCore
     {
         [ProtoBuf.ProtoMember(1)]
         public string username { get; set; }
-
-        [ProtoBuf.ProtoMember(2)]
-        public string password { get; set; }
     }
 
     [ProtoBuf.ProtoContract]

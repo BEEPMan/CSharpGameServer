@@ -10,12 +10,8 @@ using ServerCore;
 
 namespace GameServer
 {
-    class ClientSession : PacketSession
+    public class ClientSession : PacketSession
     {
-        public ClientSession(Socket clientSocket) : base(clientSocket)
-        {
-        }
-
         public override void OnRecvPacket(ArraySegment<byte> buffer)
         {
             // Extract Header
@@ -37,14 +33,14 @@ namespace GameServer
             // Deserialize based on packet type
             switch ((PacketType)header.packetType)
             {
-                case PacketType.LOGIN:
+                case PacketType.PKT_C_LOGIN:
                     using (MemoryStream dataStream = new MemoryStream(dataBytes))
                     {
                         LoginPacket loginPacket = Serializer.Deserialize<LoginPacket>(dataStream);
                         // Handle Login
                     }
                     break;
-                case PacketType.CHAT:
+                case PacketType.PKT_C_CHAT:
                     using (MemoryStream dataStream = new MemoryStream(dataBytes))
                     {
                         ChatPacket chatPacket = Serializer.Deserialize<ChatPacket>(dataStream);
@@ -56,53 +52,35 @@ namespace GameServer
             }
         }
 
-        public byte[] SerializePacket(PacketType packetType, object packet)
+        public void HandleLogin(LoginPacket data)
         {
-            byte[] headerBytes, dataBytes;
+            LoginPacket packet = new LoginPacket { username = data.username };
+            byte[] sendBuffer = SerializePacket(PacketType.PKT_S_LOGIN, packet);
+            SessionManager.Instance.BroadCast(sendBuffer);
 
-            // Serialize Data
-            using (MemoryStream dataStream = new MemoryStream())
-            {
-                Serializer.Serialize(dataStream, packet);
-                dataBytes = dataStream.ToArray();
-            }
-
-            // Serialize Header
-            PacketHeader header = new PacketHeader { packetType = (ushort)packetType, size = (ushort)dataBytes.Length };
-            using (MemoryStream headerStream = new MemoryStream())
-            {
-                Serializer.Serialize(headerStream, header);
-                headerBytes = headerStream.ToArray();
-            }
-
-            // Combine Header and Data
-            byte[] finalPacket = new byte[headerBytes.Length + dataBytes.Length];
-            Buffer.BlockCopy(headerBytes, 0, finalPacket, 0, headerBytes.Length);
-            Buffer.BlockCopy(dataBytes, 0, finalPacket, headerBytes.Length, dataBytes.Length);
-
-            return finalPacket;
+            Console.WriteLine($"[Session {SessionManager.Instance.GetSessionIndex(this)}] Login: {data.username}");
         }
 
         public void HandleChat(ChatPacket data)
         {
             ChatPacket packet = new ChatPacket { chat = data.chat };
-            byte[] sendBuffer = SerializePacket(PacketType.CHAT, packet);
+            byte[] sendBuffer = SerializePacket(PacketType.PKT_S_CHAT, packet);
             SessionManager.Instance.BroadCast(sendBuffer);
         }
 
         public override void OnConnected(EndPoint endPoint)
         {
-            throw new NotImplementedException();
+            
         }
 
         public override void OnDisconnected(EndPoint endPoint)
         {
-            throw new NotImplementedException();
+            // TODO: User가 나갔음을 다른 User들에게 Broadcast
         }
 
         public override void OnSend(int numOfBytes)
         {
-            throw new NotImplementedException();
+            
         }
     }
 }

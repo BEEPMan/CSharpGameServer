@@ -8,10 +8,6 @@ namespace ServerCore
 {
     public abstract class PacketSession : Session
     {
-        protected PacketSession(Socket clientSocket) : base(clientSocket)
-        {
-        }
-
         public override int OnRecv(ArraySegment<byte> buffer)
         {
             int processLen = 0;
@@ -36,15 +32,44 @@ namespace ServerCore
         }
 
         public abstract void OnRecvPacket(ArraySegment<byte> buffer);
+
+        public byte[] SerializePacket(PacketType packetType, object packet)
+        {
+            byte[] headerBytes, dataBytes;
+
+            // Serialize Data
+            using (MemoryStream dataStream = new MemoryStream())
+            {
+                Serializer.Serialize(dataStream, packet);
+                dataBytes = dataStream.ToArray();
+            }
+
+            // Serialize Header
+            PacketHeader header = new PacketHeader { packetType = (ushort)packetType, size = (ushort)dataBytes.Length };
+            using (MemoryStream headerStream = new MemoryStream())
+            {
+                Serializer.Serialize(headerStream, header);
+                headerBytes = headerStream.ToArray();
+            }
+
+            // Combine Header and Data
+            byte[] finalPacket = new byte[headerBytes.Length + dataBytes.Length];
+            Buffer.BlockCopy(headerBytes, 0, finalPacket, 0, headerBytes.Length);
+            Buffer.BlockCopy(dataBytes, 0, finalPacket, headerBytes.Length, dataBytes.Length);
+
+            return finalPacket;
+        }
     }
 
     public abstract class Session
     {
         private Socket _clientSocket;
-        private byte[] _buffer;
+        //private byte[] _buffer;
         private RecvBuffer _recvBuffer = new RecvBuffer(1024);
 
-        public Session(Socket clientSocket)
+        public int _id;
+
+        public void Start(Socket clientSocket)
         {
             _clientSocket = clientSocket;
         }
