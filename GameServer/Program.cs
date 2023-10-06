@@ -9,7 +9,7 @@ namespace GameServer
     {
         static async Task Main(string[] args)
         {
-            Listener listener = new Listener(7777, () => { return new ClientSession(); }); // 포트 3000에서 수신 대기
+            Listener listener = new Listener(7777, () => { return SessionManager.Instance.AddSession(); }); // 포트 3000에서 수신 대기
             await listener.StartAsync();
         }
     }

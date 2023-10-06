@@ -1,16 +1,15 @@
-﻿using System;
+﻿using ProtoBuf;
+using ServerCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using ProtoBuf;
-using ServerCore;
 
-namespace GameServer
+namespace DummyClient
 {
-    public class ClientSession : PacketSession
+    public class ServerSession : PacketSession
     {
         public int SessionId { get; set; }
         public string Username { get; set; }
@@ -36,18 +35,18 @@ namespace GameServer
             // Deserialize based on packet type
             switch ((PacketType)header.packetType)
             {
-                case PacketType.PKT_C_LOGIN:
+                case PacketType.PKT_S_LOGIN:
                     using (MemoryStream dataStream = new MemoryStream(dataBytes))
                     {
-                        C_LOGIN packet = Serializer.Deserialize<C_LOGIN>(dataStream);
-                        Handle_C_LOGIN(packet);
+                        S_LOGIN packet = Serializer.Deserialize<S_LOGIN>(dataStream);
+                        Handle_S_LOGIN(packet);
                     }
                     break;
-                case PacketType.PKT_C_CHAT:
+                case PacketType.PKT_S_CHAT:
                     using (MemoryStream dataStream = new MemoryStream(dataBytes))
                     {
-                        C_CHAT packet = Serializer.Deserialize<C_CHAT>(dataStream);
-                        Handle_C_CHAT(packet);
+                        S_CHAT packet = Serializer.Deserialize<S_CHAT>(dataStream);
+                        Handle_S_CHAT(packet);
                     }
                     break;
                 default:
@@ -55,29 +54,29 @@ namespace GameServer
             }
         }
 
-        public void Handle_C_LOGIN(C_LOGIN data)
+        public void Handle_S_LOGIN(S_LOGIN data)
         {
             Username = data.Username;
 
-            S_LOGIN packet = new S_LOGIN { PlayerId = SessionId, Username = data.Username };
-            byte[] sendBuffer = SerializePacket(PacketType.PKT_S_LOGIN, packet);
-            SessionManager.Instance.BroadCast(sendBuffer);
+            C_LOGIN packet = new C_LOGIN { Username = data.Username };
+            byte[] sendBuffer = SerializePacket(PacketType.PKT_C_LOGIN, packet);
+            // TODO : Send to Server
 
             Console.WriteLine($"[Session {SessionId}] Login: {data.Username}");
         }
 
-        public void Handle_C_CHAT(C_CHAT data)
+        public void Handle_S_CHAT(S_CHAT data)
         {
-            S_CHAT packet = new S_CHAT { PlayerId = SessionId, Chat = data.Chat };
-            byte[] sendBuffer = SerializePacket(PacketType.PKT_S_CHAT, packet);
-            SessionManager.Instance.BroadCast(sendBuffer);
+            C_CHAT packet = new C_CHAT { Chat = data.Chat };
+            byte[] sendBuffer = SerializePacket(PacketType.PKT_C_CHAT, packet);
+            // TODO : Send to Server
 
             Console.WriteLine($"[User {Username}] Chat: {data.Chat}");
         }
 
         public override void OnConnected(EndPoint endPoint)
         {
-            
+
         }
 
         public override void OnDisconnected(EndPoint endPoint)
@@ -87,7 +86,7 @@ namespace GameServer
 
         public override void OnSend(int numOfBytes)
         {
-            
+
         }
     }
 }

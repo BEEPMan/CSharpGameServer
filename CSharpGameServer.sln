@@ -4,10 +4,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.7.34018.315
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DummyClient", "DummyClient\DummyClient.csproj", "{89359C68-EBCC-4BB8-9FCF-FB8CFD25A114}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7F9497B8-E353-4527-A51E-E2A580CBEB14} = {7F9497B8-E353-4527-A51E-E2A580CBEB14}
+	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameServer", "GameServer\GameServer.csproj", "{CC7F3411-6F1B-4E7B-B45B-F6DF3D64F606}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameServer", "GameServer\GameServer.csproj", "{CC7F3411-6F1B-4E7B-B45B-F6DF3D64F606}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerCore", "ServerCore\ServerCore.csproj", "{7F9497B8-E353-4527-A51E-E2A580CBEB14}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerCore", "ServerCore\ServerCore.csproj", "{7F9497B8-E353-4527-A51E-E2A580CBEB14}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

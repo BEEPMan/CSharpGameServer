@@ -11,6 +11,8 @@ namespace GameServer
 {
     class GameSession : Session
     {
+        public int SessionId { get; set; }
+
         public override void OnConnected(EndPoint endPoint)
         {
             Console.WriteLine("New session started.");
@@ -29,7 +31,7 @@ namespace GameServer
             Console.WriteLine($"Received data: {data}");
 
             // SendDataAsync(data);
-            SessionManager.Instance.BroadCast($"[Client {SessionManager.Instance.GetSessionIndex(this)}] {data}");
+            SessionManager.Instance.BroadCast($"[Client {SessionId}] {data}");
 
             return buffer.Count;
         }

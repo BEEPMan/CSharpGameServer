@@ -18,6 +18,8 @@ namespace DummyClient
             _clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _buffer = new byte[1024];
 
+            // new IPEndPoint(IPAddress.Parse(SERVER_IP), PORT)
+
             try
             {
                 await _clientSocket.ConnectAsync(new IPEndPoint(IPAddress.Parse(SERVER_IP), PORT));

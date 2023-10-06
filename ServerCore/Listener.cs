@@ -39,7 +39,6 @@ namespace ServerCore
                     Session newSession = _sessionFactory.Invoke();
                     _ = newSession.ConnectAsync();
                     newSession.OnConnected(clientSocket.RemoteEndPoint);
-                    SessionManager.Instance.AddSession(newSession);
                 }
                 catch (Exception e)
                 {

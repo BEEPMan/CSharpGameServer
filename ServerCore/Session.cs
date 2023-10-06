@@ -157,7 +157,6 @@ namespace ServerCore
         public void Disconnect()
         {
             OnDisconnected(_clientSocket.RemoteEndPoint);
-            SessionManager.Instance.RemoveSession(this);
 
             _clientSocket.Shutdown(SocketShutdown.Both);
             _clientSocket.Close();
