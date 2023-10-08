@@ -40,15 +40,7 @@ namespace GameServer
             _sessions.Remove(session.SessionId);
         }
 
-        /*public void BroadCast(string data)
-        {
-            foreach (int index in _sessions.Keys)
-            {
-                _sessions[index].SendDataAsync(data);
-            }
-        }*/
-
-        public void BroadCast(ArraySegment<byte> data)
+        public void BroadCast(byte[] data)
         {
             foreach (int index in _sessions.Keys)
             {
@@ -56,7 +48,7 @@ namespace GameServer
             }
         }
 
-        public void BroadCasttoOthers(ArraySegment<byte> data, int sessionId)
+        public void BroadCasttoOthers(byte[] data, int sessionId)
         {
             foreach (int index in _sessions.Keys)
             {

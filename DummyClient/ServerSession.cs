@@ -14,12 +14,14 @@ namespace DummyClient
         public int SessionId { get; set; }
         public string Username { get; set; }
 
-        public override void OnRecvPacket(ArraySegment<byte> buffer)
+        public bool isLogin = false;
+
+        public override void OnRecvPacket(byte[] buffer)
         {
             // Extract Header
             int headerSize = sizeof(ushort) * 2;
             byte[] headerBytes = new byte[headerSize];
-            Buffer.BlockCopy(buffer.Array, 0, headerBytes, 0, headerSize);
+            Buffer.BlockCopy(buffer, 0, headerBytes, 0, headerSize);
 
             PacketHeader header;
             using (MemoryStream headerStream = new MemoryStream(headerBytes))
@@ -30,7 +32,7 @@ namespace DummyClient
             // Extract Data
             int dataSize = header.size;
             byte[] dataBytes = new byte[dataSize];
-            Buffer.BlockCopy(buffer.Array, headerSize, dataBytes, 0, dataSize);
+            Buffer.BlockCopy(buffer, headerSize, dataBytes, 0, dataSize);
 
             // Deserialize based on packet type
             switch ((PacketType)header.packetType)
@@ -56,17 +58,15 @@ namespace DummyClient
 
         public void Handle_S_LOGIN(S_LOGIN data)
         {
-            Username = data.Username;
-            Console.WriteLine($"[User {data.Username}] Login");
+            if(data.Username == Username)
+                Console.WriteLine($"Login success");
+            else
+                Console.WriteLine($"[User {data.Username}] Login");
         }
 
         public void Handle_S_CHAT(S_CHAT data)
         {
-            C_CHAT packet = new C_CHAT { Chat = data.Chat };
-            ArraySegment<byte> sendBuffer = SerializePacket(PacketType.PKT_C_CHAT, packet);
-            // TODO : Send to Server
-
-            Console.WriteLine($"[User {Username}] Chat: {data.Chat}");
+            Console.WriteLine($"[User {data.PlayerId}] Chat: {data.Chat}");
         }
 
         public override void OnConnected(EndPoint endPoint)
@@ -74,15 +74,17 @@ namespace DummyClient
             Console.Write($"Input username: ");
             string data = Console.ReadLine();
 
+            Username = data;
             C_LOGIN packet = new C_LOGIN { Username = data };
-            ArraySegment<byte> sendBuffer = SerializePacket(PacketType.PKT_C_LOGIN, packet);
-            // TODO : Send to Server
+            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_LOGIN, packet);
             Send(sendBuffer);
+
+            isLogin = true;
         }
 
         public override void OnDisconnected(EndPoint endPoint)
         {
-            // TODO: User가 나갔음을 다른 User들에게 Broadcast
+            Console.WriteLine($"Disconnected");
         }
 
         public override void OnSend(int numOfBytes)

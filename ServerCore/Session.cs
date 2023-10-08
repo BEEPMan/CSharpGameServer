@@ -11,48 +11,14 @@ namespace ServerCore
     {
         public static readonly int HeaderSize = 2;
 
-        public override int OnRecv(ArraySegment<byte> buffer)
+        public override int OnRecv(byte[] buffer)
         {
-            int processLen = 0;
+            OnRecvPacket(buffer);
 
-            while(true)
-            {
-                if(buffer.Count < HeaderSize)
-                    break;
-
-                ushort dataSize = BitConverter.ToUInt16(buffer.Array, buffer.Offset);
-                if (buffer.Count < dataSize)
-                    break;
-
-                OnRecvPacket(new ArraySegment<byte>(buffer.Array, buffer.Offset, dataSize));
-
-                processLen += dataSize;
-                buffer = new ArraySegment<byte>(buffer.Array, buffer.Offset + dataSize, buffer.Count - dataSize);
-            }
-
-            return processLen;
+            return buffer.Length;
         }
 
-        public abstract void OnRecvPacket(ArraySegment<byte> buffer);
-
-        public ArraySegment<byte> SerializePacket(PacketType packetType, object data)
-        {
-            ArraySegment<byte> segment = SendBufferHelper.Open(4096);
-
-            byte[] buffer;
-
-            PacketHeader header = new PacketHeader { packetType = (ushort)packetType, size = 0 };
-            using (MemoryStream packetStream = new MemoryStream())
-            {
-                Serializer.Serialize(packetStream, header);
-                Serializer.Serialize(packetStream, data);
-                buffer = packetStream.ToArray();
-            }
-
-            segment = new ArraySegment<byte>(buffer, segment.Offset, segment.Count);
-            
-            return SendBufferHelper.Close(buffer.Length);
-        }
+        public abstract void OnRecvPacket(byte[] buffer);
     }
 
     public abstract class Session
@@ -60,11 +26,11 @@ namespace ServerCore
         Socket _socket;
         int _disconnected = 0;
 
-        RecvBuffer _recvBuffer = new RecvBuffer(1024);
+        byte[] _recvBuffer = new byte[1024];
 
         object _lock = new object();
-        Queue<ArraySegment<byte>> _sendQueue = new Queue<ArraySegment<byte>>();
-        List<ArraySegment<byte>> _pendingList = new List<ArraySegment<byte>>();
+        Queue<byte[]> _sendQueue = new Queue<byte[]>();
+        List<byte[]> _pendingList = new List<byte[]>();
         SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();
         SocketAsyncEventArgs _recvArgs = new SocketAsyncEventArgs();
 
@@ -80,7 +46,7 @@ namespace ServerCore
             RegisterRecv();
         }
 
-        public void Send(ArraySegment<byte> sendBuffer)
+        public void Send(byte[] sendBuffer)
         {
             lock(_lock)
             {
@@ -104,10 +70,11 @@ namespace ServerCore
         {
             while(_sendQueue.Count > 0)
             {
-                ArraySegment<byte> buffer = _sendQueue.Dequeue();
+                byte[] buffer = _sendQueue.Dequeue();
                 _pendingList.Add(buffer);
             }
-            _sendArgs.BufferList = _pendingList;
+            foreach (byte[] buffer in _pendingList)
+                _sendArgs.BufferList = new List<ArraySegment<byte>> { new ArraySegment<byte>(buffer) };
 
             bool pending = _socket.SendAsync(_sendArgs);
             if (!pending)
@@ -144,9 +111,7 @@ namespace ServerCore
 
         private void RegisterRecv()
         {
-            _recvBuffer.Clear();
-            ArraySegment<byte> segment = _recvBuffer.WriteSegment;
-            _recvArgs.SetBuffer(segment.Array, segment.Offset, segment.Count);
+            _recvArgs.SetBuffer(_recvBuffer);
 
             bool pending = _socket.ReceiveAsync(_recvArgs);
             if (!pending)
@@ -159,20 +124,8 @@ namespace ServerCore
             {
                 try
                 {
-                    if(_recvBuffer.OnWrite(args.BytesTransferred) == false)
-                    {
-                        Disconnect();
-                        return;
-                    }
-
-                    int processLen = OnRecv(_recvBuffer.ReadSegment);
-                    if(processLen < 0 || _recvBuffer.DataSize < processLen)
-                    {
-                        Disconnect();
-                        return;
-                    }
-
-                    if(_recvBuffer.OnRead(processLen) == false)
+                    int processLen = OnRecv(_recvBuffer);
+                    if(processLen < 0)
                     {
                         Disconnect();
                         return;
@@ -192,7 +145,7 @@ namespace ServerCore
         }
 
         public abstract void OnConnected(EndPoint endPoint);
-        public abstract int OnRecv(ArraySegment<byte> buffer);
+        public abstract int OnRecv(byte[] buffer);
         public abstract void OnSend(int numOfBytes);
         public abstract void OnDisconnected(EndPoint endPoint);
 

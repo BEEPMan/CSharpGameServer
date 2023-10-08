@@ -9,7 +9,7 @@ namespace DummyClient
 {
     class Program
     {
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
             string host = Dns.GetHostName();
             IPHostEntry ipHost = Dns.GetHostEntry(host);
@@ -21,15 +21,14 @@ namespace DummyClient
 
             while(true)
             {
-                try
-                {
+                if(SessionManager.Instance.CheckLogin() == true)
+                    break;
+            }
 
-                }
-                catch(Exception e)
-                {
-                    Console.WriteLine(e.ToString());
-                }
-                Thread.Sleep(100);
+            while(true)
+            {
+                string chat = Console.ReadLine();
+                SessionManager.Instance.SendForEach(chat);
             }
         }
     }
