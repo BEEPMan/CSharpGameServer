@@ -7,10 +7,21 @@ namespace GameServer
 {
     class Program
     {
-        static async Task Main(string[] args)
+        static Listener _listener = new Listener();
+
+        static void Main(string[] args)
         {
-            Listener listener = new Listener(7777, () => { return SessionManager.Instance.AddSession(); }); // 포트 3000에서 수신 대기
-            await listener.StartAsync();
+            string host = Dns.GetHostName();
+            IPHostEntry ipHost = Dns.GetHostEntry(host);
+            IPAddress ipAddr = ipHost.AddressList[0];
+            IPEndPoint endPoint = new IPEndPoint(ipAddr, 7777);
+
+            _listener.Init(endPoint, () => { return SessionManager.Instance.AddSession(); });
+
+            while (true)
+            {
+
+            }
         }
     }
 }

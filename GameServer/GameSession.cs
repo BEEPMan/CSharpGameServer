@@ -9,7 +9,7 @@ using ServerCore;
 
 namespace GameServer
 {
-    class GameSession : Session
+    /*class GameSession : Session
     {
         public int SessionId { get; set; }
 
@@ -40,5 +40,5 @@ namespace GameServer
         {
             
         }
-    }
+    }*/
 }

@@ -8,43 +8,42 @@ namespace ServerCore
     public class Listener
     {
         private Socket _listenSocket;
-        private int _port;
         Func<Session> _sessionFactory;
 
-        public Listener(int port, Func<Session> sessionFactory)
+        public void Init(IPEndPoint endPoint, Func<Session> sessionFactory)
         {
-            _port = port;
-            _listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _listenSocket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             _sessionFactory += sessionFactory;
-        }
 
-        public async Task StartAsync()
-        {
-            // 서버의 IP 주소와 포트 번호를 바인딩합니다.
-            _listenSocket.Bind(new IPEndPoint(IPAddress.Any, _port));
-
-            // 연결 요청을 수신 대기합니다.
+            _listenSocket.Bind(endPoint);
             _listenSocket.Listen(10);
 
-            Console.WriteLine($"Server listening on port {_port}");
+            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+            args.Completed += new EventHandler<SocketAsyncEventArgs>(OnAcceptCompleted);
+            RegisterAccept(args);
+        }
 
-            while (true)
+        private void RegisterAccept(SocketAsyncEventArgs args)
+        {
+            args.AcceptSocket = null;
+
+            bool pending = _listenSocket.AcceptAsync(args);
+            if (pending == false)
+                OnAcceptCompleted(null, args);
+        }
+
+        private void OnAcceptCompleted(object sender, SocketAsyncEventArgs args)
+        {
+            if (args.SocketError == SocketError.Success)
             {
-                try
-                {
-                    // 클라이언트의 연결 요청을 비동기적으로 수락합니다.
-                    Socket clientSocket = await _listenSocket.AcceptAsync();
-
-                    // 새로운 세션을 생성하고 초기화합니다.
-                    Session newSession = _sessionFactory.Invoke();
-                    _ = newSession.ConnectAsync();
-                    newSession.OnConnected(clientSocket.RemoteEndPoint);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"Error accepting client: {e.Message}");
-                }
+                Session session = _sessionFactory.Invoke();
+                session.Start(args.AcceptSocket);
+                session.OnConnected(args.AcceptSocket.RemoteEndPoint);
             }
+            else
+                Console.WriteLine(args.SocketError.ToString());
+
+            RegisterAccept(args);
         }
     }
 }

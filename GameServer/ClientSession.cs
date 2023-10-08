@@ -17,34 +17,40 @@ namespace GameServer
 
         public override void OnRecvPacket(ArraySegment<byte> buffer)
         {
-            // Extract Header
-            int headerSize = sizeof(ushort) * 2;
-            byte[] headerBytes = new byte[headerSize];
-            Buffer.BlockCopy(buffer.Array, 0, headerBytes, 0, headerSize);
+            int pos = 0;
 
-            PacketHeader header;
-            using (MemoryStream headerStream = new MemoryStream(headerBytes))
-            {
-                header = Serializer.Deserialize<PacketHeader>(headerStream);
-            }
+            ushort size = BitConverter.ToUInt16(buffer.Array, buffer.Offset);
+            pos += 2;
+            ushort id = BitConverter.ToUInt16(buffer.Array, buffer.Offset + pos);
+            pos += 2;
 
-            // Extract Data
-            int dataSize = header.size;
-            byte[] dataBytes = new byte[dataSize];
-            Buffer.BlockCopy(buffer.Array, headerSize, dataBytes, 0, dataSize);
+            byte[] byteArray = buffer.ToArray();
+            //int headerSize = sizeof(ushort) * 2;
+            //byte[] headerBytes = new byte[headerSize];
+            //Buffer.BlockCopy(buffer.Array, 0, headerBytes, 0, headerSize);
 
-            // Deserialize based on packet type
-            switch ((PacketType)header.packetType)
+            //PacketHeader header;
+            //using (MemoryStream headerStream = new MemoryStream(headerBytes))
+            //{
+            //    header = Serializer.Deserialize<PacketHeader>(headerStream);
+            //}
+
+            //// Extract Data
+            //int dataSize = header.size;
+            //byte[] dataBytes = new byte[dataSize];
+            //Buffer.BlockCopy(buffer.Array, headerSize, dataBytes, 0, dataSize);
+
+            switch ((PacketType)id)
             {
                 case PacketType.PKT_C_LOGIN:
-                    using (MemoryStream dataStream = new MemoryStream(dataBytes))
+                    using (MemoryStream dataStream = new MemoryStream(byteArray))
                     {
                         C_LOGIN packet = Serializer.Deserialize<C_LOGIN>(dataStream);
                         Handle_C_LOGIN(packet);
                     }
                     break;
                 case PacketType.PKT_C_CHAT:
-                    using (MemoryStream dataStream = new MemoryStream(dataBytes))
+                    using (MemoryStream dataStream = new MemoryStream(byteArray))
                     {
                         C_CHAT packet = Serializer.Deserialize<C_CHAT>(dataStream);
                         Handle_C_CHAT(packet);
@@ -60,8 +66,8 @@ namespace GameServer
             Username = data.Username;
 
             S_LOGIN packet = new S_LOGIN { PlayerId = SessionId, Username = data.Username };
-            byte[] sendBuffer = SerializePacket(PacketType.PKT_S_LOGIN, packet);
-            SessionManager.Instance.BroadCast(sendBuffer);
+            ArraySegment<byte> sendBuffer = SerializePacket(PacketType.PKT_S_LOGIN, packet);
+            SessionManager.Instance.BroadCasttoOthers(sendBuffer, SessionId);
 
             Console.WriteLine($"[Session {SessionId}] Login: {data.Username}");
         }
@@ -69,8 +75,8 @@ namespace GameServer
         public void Handle_C_CHAT(C_CHAT data)
         {
             S_CHAT packet = new S_CHAT { PlayerId = SessionId, Chat = data.Chat };
-            byte[] sendBuffer = SerializePacket(PacketType.PKT_S_CHAT, packet);
-            SessionManager.Instance.BroadCast(sendBuffer);
+            ArraySegment<byte> sendBuffer = SerializePacket(PacketType.PKT_S_CHAT, packet);
+            SessionManager.Instance.BroadCasttoOthers(sendBuffer, SessionId);
 
             Console.WriteLine($"[User {Username}] Chat: {data.Chat}");
         }

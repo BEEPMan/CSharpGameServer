@@ -1,5 +1,6 @@
 ﻿using ProtoBuf;
 using System;
+using System.Drawing;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -8,20 +9,21 @@ namespace ServerCore
 {
     public abstract class PacketSession : Session
     {
+        public static readonly int HeaderSize = 2;
+
         public override int OnRecv(ArraySegment<byte> buffer)
         {
             int processLen = 0;
 
             while(true)
             {
-                if(buffer.Count < sizeof(int))
+                if(buffer.Count < HeaderSize)
                     break;
 
-                int dataSize = BitConverter.ToInt16(buffer.Array, buffer.Offset);
-                if(buffer.Count < dataSize)
+                ushort dataSize = BitConverter.ToUInt16(buffer.Array, buffer.Offset);
+                if (buffer.Count < dataSize)
                     break;
 
-                // 패킷 헤더를 제외한 패킷 데이터의 길이를 읽어옵니다.
                 OnRecvPacket(new ArraySegment<byte>(buffer.Array, buffer.Offset, dataSize));
 
                 processLen += dataSize;
@@ -33,66 +35,131 @@ namespace ServerCore
 
         public abstract void OnRecvPacket(ArraySegment<byte> buffer);
 
-        public byte[] SerializePacket(PacketType packetType, object packet)
+        public ArraySegment<byte> SerializePacket(PacketType packetType, object data)
         {
-            byte[] headerBytes, dataBytes;
+            ArraySegment<byte> segment = SendBufferHelper.Open(4096);
 
-            // Serialize Data
-            using (MemoryStream dataStream = new MemoryStream())
+            byte[] buffer;
+
+            PacketHeader header = new PacketHeader { packetType = (ushort)packetType, size = 0 };
+            using (MemoryStream packetStream = new MemoryStream())
             {
-                Serializer.Serialize(dataStream, packet);
-                dataBytes = dataStream.ToArray();
+                Serializer.Serialize(packetStream, header);
+                Serializer.Serialize(packetStream, data);
+                buffer = packetStream.ToArray();
             }
 
-            // Serialize Header
-            PacketHeader header = new PacketHeader { packetType = (ushort)packetType, size = (ushort)dataBytes.Length };
-            using (MemoryStream headerStream = new MemoryStream())
-            {
-                Serializer.Serialize(headerStream, header);
-                headerBytes = headerStream.ToArray();
-            }
-
-            // Combine Header and Data
-            byte[] finalPacket = new byte[headerBytes.Length + dataBytes.Length];
-            Buffer.BlockCopy(headerBytes, 0, finalPacket, 0, headerBytes.Length);
-            Buffer.BlockCopy(dataBytes, 0, finalPacket, headerBytes.Length, dataBytes.Length);
-
-            return finalPacket;
+            segment = new ArraySegment<byte>(buffer, segment.Offset, segment.Count);
+            
+            return SendBufferHelper.Close(buffer.Length);
         }
     }
 
     public abstract class Session
     {
-        private Socket _clientSocket;
-        //private byte[] _buffer;
-        private RecvBuffer _recvBuffer = new RecvBuffer(1024);
+        Socket _socket;
+        int _disconnected = 0;
+
+        RecvBuffer _recvBuffer = new RecvBuffer(1024);
+
+        object _lock = new object();
+        Queue<ArraySegment<byte>> _sendQueue = new Queue<ArraySegment<byte>>();
+        List<ArraySegment<byte>> _pendingList = new List<ArraySegment<byte>>();
+        SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();
+        SocketAsyncEventArgs _recvArgs = new SocketAsyncEventArgs();
 
         public int _id;
 
-        public void Start(Socket clientSocket)
+        public void Start(Socket socket)
         {
-            _clientSocket = clientSocket;
+            _socket = socket;
+
+            _recvArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnRecvCompleted);
+            _sendArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnSendCompleted);
+
+            RegisterRecv();
         }
 
-        // 클라이언트와의 연결을 초기화합니다.
-        public async Task ConnectAsync()
+        public void Send(ArraySegment<byte> sendBuffer)
         {
-            // 데이터 수신을 시작합니다.
-            await ReceiveDataAsync();
+            lock(_lock)
+            {
+                _sendQueue.Enqueue(sendBuffer);
+                if (_pendingList.Count == 0)
+                    RegisterSend();
+            }
         }
 
-        // 클라이언트로부터 데이터를 비동기적으로 수신합니다.
-        private async Task ReceiveDataAsync()
+        public void Disconnect()
         {
-            while (_clientSocket.Connected)
+            if(Interlocked.Exchange(ref _disconnected, 1) == 1)
+                return;
+
+            OnDisconnected(_socket.RemoteEndPoint);
+            _socket.Shutdown(SocketShutdown.Both);
+            _socket.Close();
+        }
+
+        private void RegisterSend()
+        {
+            while(_sendQueue.Count > 0)
+            {
+                ArraySegment<byte> buffer = _sendQueue.Dequeue();
+                _pendingList.Add(buffer);
+            }
+            _sendArgs.BufferList = _pendingList;
+
+            bool pending = _socket.SendAsync(_sendArgs);
+            if (!pending)
+                OnSendCompleted(null, _sendArgs);
+        }
+
+        private void OnSendCompleted(object sender, SocketAsyncEventArgs args)
+        {
+            lock(_lock)
+            {
+                if(args.BytesTransferred > 0 && args.SocketError == SocketError.Success)
+                {
+                    try
+                    {
+                        _sendArgs.BufferList = null;
+                        _pendingList.Clear();
+
+                        OnSend(_sendArgs.BytesTransferred);
+
+                        if (_sendQueue.Count > 0)
+                            RegisterSend();
+                    }
+                    catch(Exception e)
+                    {
+                        Console.WriteLine($"OnSendCompleted Failed {e}");
+                    }
+                }
+                else
+                {
+                    Disconnect();
+                }
+            }
+        }
+
+        private void RegisterRecv()
+        {
+            _recvBuffer.Clear();
+            ArraySegment<byte> segment = _recvBuffer.WriteSegment;
+            _recvArgs.SetBuffer(segment.Array, segment.Offset, segment.Count);
+
+            bool pending = _socket.ReceiveAsync(_recvArgs);
+            if (!pending)
+                OnRecvCompleted(null, _recvArgs);
+        }
+
+        private void OnRecvCompleted(object sender, SocketAsyncEventArgs args)
+        {
+            if(args.BytesTransferred > 0 && args.SocketError == SocketError.Success)
             {
                 try
                 {
-                    _recvBuffer.Clear();
-                    ArraySegment<byte> segment = _recvBuffer.WriteSegment;
-                    int received = await _clientSocket.ReceiveAsync(segment, SocketFlags.None);
-
-                    if(_recvBuffer.OnWrite(received) == false)
+                    if(_recvBuffer.OnWrite(args.BytesTransferred) == false)
                     {
                         Disconnect();
                         return;
@@ -110,56 +177,18 @@ namespace ServerCore
                         Disconnect();
                         return;
                     }
-                    
+
+                    RegisterRecv();
                 }
-                catch (Exception e)
+                catch(Exception e)
                 {
-                    Console.WriteLine($"Error receiving data: {e.Message}");
-                    Disconnect();
-                    return;
+                    Console.WriteLine($"OnRecvCompleted Failed {e}");
                 }
             }
-        }
-
-        // 클라이언트에게 데이터를 비동기적으로 전송합니다.
-        public async Task SendDataAsync(string data)
-        {
-            try
+            else
             {
-                byte[] buffer = System.Text.Encoding.UTF8.GetBytes(data);
-                int sent = await _clientSocket.SendAsync(new ArraySegment<byte>(buffer), SocketFlags.None);
-
-                OnSend(sent);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Error sending data: {e.Message}");
                 Disconnect();
             }
-        }
-
-        public async Task SendDataAsync(byte[] data)
-        {
-            try
-            {
-                int sent = await _clientSocket.SendAsync(new ArraySegment<byte>(data), SocketFlags.None);
-
-                OnSend(sent);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Error sending data: {e.Message}");
-                Disconnect();
-            }
-        }
-
-        // 연결을 종료합니다.
-        public void Disconnect()
-        {
-            OnDisconnected(_clientSocket.RemoteEndPoint);
-
-            _clientSocket.Shutdown(SocketShutdown.Both);
-            _clientSocket.Close();
         }
 
         public abstract void OnConnected(EndPoint endPoint);

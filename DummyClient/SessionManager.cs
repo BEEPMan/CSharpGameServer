@@ -5,7 +5,7 @@ namespace DummyClient
     public class SessionManager
     {
         private static SessionManager _instance;
-        private List<ServerSession> sessions = new List<ServerSession>();
+        private List<ServerSession> _sessions = new List<ServerSession>();
 
         private SessionManager() { }
 
@@ -24,13 +24,16 @@ namespace DummyClient
         public ServerSession AddSession()
         {
             ServerSession session = new ServerSession();
-            sessions.Add(session);
+            _sessions.Add(session);
+
+            Console.WriteLine($"New session connected.");
+
             return session;
         }
 
         public void RemoveSession(ServerSession session)
         {
-            sessions.Remove(session);
+            _sessions.Remove(session);
         }
     }
 }

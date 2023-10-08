@@ -57,18 +57,13 @@ namespace DummyClient
         public void Handle_S_LOGIN(S_LOGIN data)
         {
             Username = data.Username;
-
-            C_LOGIN packet = new C_LOGIN { Username = data.Username };
-            byte[] sendBuffer = SerializePacket(PacketType.PKT_C_LOGIN, packet);
-            // TODO : Send to Server
-
-            Console.WriteLine($"[Session {SessionId}] Login: {data.Username}");
+            Console.WriteLine($"[User {data.Username}] Login");
         }
 
         public void Handle_S_CHAT(S_CHAT data)
         {
             C_CHAT packet = new C_CHAT { Chat = data.Chat };
-            byte[] sendBuffer = SerializePacket(PacketType.PKT_C_CHAT, packet);
+            ArraySegment<byte> sendBuffer = SerializePacket(PacketType.PKT_C_CHAT, packet);
             // TODO : Send to Server
 
             Console.WriteLine($"[User {Username}] Chat: {data.Chat}");
@@ -76,7 +71,13 @@ namespace DummyClient
 
         public override void OnConnected(EndPoint endPoint)
         {
+            Console.Write($"Input username: ");
+            string data = Console.ReadLine();
 
+            C_LOGIN packet = new C_LOGIN { Username = data };
+            ArraySegment<byte> sendBuffer = SerializePacket(PacketType.PKT_C_LOGIN, packet);
+            // TODO : Send to Server
+            Send(sendBuffer);
         }
 
         public override void OnDisconnected(EndPoint endPoint)

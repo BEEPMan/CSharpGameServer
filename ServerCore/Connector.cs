@@ -12,49 +12,40 @@ namespace ServerCore
     {
         Func<Session> _sessionFactory;
 
-        public async Task ConnectAsync(IPEndPoint endPoint, Func<Session> sessionFactory, int count = 1)
+        public void Connect(IPEndPoint endPoint, Func<Session> sessionFactory)
         {
-            for(int i = 0; i < count; i++)
-            {
-                Socket socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                _sessionFactory = sessionFactory;
+            Socket socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            _sessionFactory += sessionFactory;
+            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+            args.Completed += OnConnectCompleted;
+            args.RemoteEndPoint = endPoint;
+            args.UserToken = socket;
 
-                await socket.ConnectAsync(endPoint);
-
-                Session newSession = _sessionFactory.Invoke();
-                _ = newSession.ConnectAsync();
-                newSession.OnConnected(socket.RemoteEndPoint);
-                Console.WriteLine("Connected to server.");
-            }
+            RegisterConnect(args);
         }
 
-        void RegisterConnect(SocketAsyncEventArgs args)
+        private void RegisterConnect(SocketAsyncEventArgs args)
         {
             Socket socket = args.UserToken as Socket;
+
             if(socket == null)
-            {
                 return;
-            }
 
             bool pending = socket.ConnectAsync(args);
-            if(pending == false)
-            {
+            if (pending == false)
                 OnConnectCompleted(null, args);
-            }
         }
 
-        void OnConnectCompleted(object sender, SocketAsyncEventArgs args)
+        private void OnConnectCompleted(object sender, SocketAsyncEventArgs args)
         {
-            if(args.SocketError == SocketError.Success)
+            if (args.SocketError == SocketError.Success)
             {
                 Session session = _sessionFactory.Invoke();
                 session.Start(args.ConnectSocket);
                 session.OnConnected(args.RemoteEndPoint);
             }
             else
-            {
-                Console.WriteLine($"Failed to connect. {args.SocketError}");
-            }
+                Console.WriteLine(args.SocketError.ToString());
         }
     }
 }
