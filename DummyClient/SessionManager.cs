@@ -25,11 +25,14 @@ namespace DummyClient
 
         public void SendForEach(string data)
         {
-            foreach (ServerSession session in _sessions)
+            lock (_lock)
             {
-                C_CHAT packet = new C_CHAT { Chat = data };
-                byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_CHAT, packet);
-                session.Send(sendBuffer);
+                foreach (ServerSession session in _sessions)
+                {
+                    C_CHAT packet = new C_CHAT { Chat = data };
+                    byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_CHAT, packet);
+                    session.Send(sendBuffer);
+                }
             }
         }
 
@@ -47,17 +50,22 @@ namespace DummyClient
 
         public ServerSession AddSession()
         {
-            ServerSession session = new ServerSession();
-            _sessions.Add(session);
+            lock (_lock)
+            {
+                ServerSession session = new ServerSession();
+                // TODO : Add가 여러번 호출되고 있는 상태를 해결해야 함
+                _sessions.Add(session);
 
-            Console.WriteLine($"New session connected.");
+                Console.WriteLine($"New session connected.");
 
-            return session;
+                return session;
+            }
         }
 
         public void RemoveSession(ServerSession session)
         {
-            _sessions.Remove(session);
+            lock (_lock)
+                _sessions.Remove(session);
         }
     }
 }

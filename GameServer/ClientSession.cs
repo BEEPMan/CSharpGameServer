@@ -58,7 +58,7 @@ namespace GameServer
         public void Handle_C_LOGIN(C_LOGIN data)
         {
             Username = data.Username;
-            Room.Enter(this);
+            Program.Room.Enter(this);
 
             S_LOGIN packet = new S_LOGIN { PlayerId = SessionId, Username = data.Username };
             byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_LOGIN, packet);
@@ -69,16 +69,18 @@ namespace GameServer
 
         public void Handle_C_CHAT(C_CHAT data)
         {
-            S_CHAT packet = new S_CHAT { PlayerId = SessionId, Chat = data.Chat };
-            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_CHAT, packet);
-            SessionManager.Instance.BroadCasttoOthers(sendBuffer, SessionId);
+            Room.Broadcast(this, data.Chat);
 
-            Console.WriteLine($"[User {Username}] Chat: {data.Chat}");
+            //S_CHAT packet = new S_CHAT { PlayerId = SessionId, Chat = data.Chat };
+            //byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_CHAT, packet);
+            //SessionManager.Instance.BroadCasttoOthers(sendBuffer, SessionId);
+
+            Console.WriteLine($"[User {SessionId}] Chat: {data.Chat}");
         }
 
         public override void OnConnected(EndPoint endPoint)
         {
-            
+            Console.WriteLine($"[{endPoint}] OnConnected");
         }
 
         public override void OnDisconnected(EndPoint endPoint)

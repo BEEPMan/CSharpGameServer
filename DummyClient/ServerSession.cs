@@ -71,15 +71,16 @@ namespace DummyClient
 
         public override void OnConnected(EndPoint endPoint)
         {
-            Console.Write($"Input username: ");
-            string data = Console.ReadLine();
+            //Console.Write($"Input username: ");
+            //string data = Console.ReadLine();
 
-            Username = data;
-            C_LOGIN packet = new C_LOGIN { Username = data };
-            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_LOGIN, packet);
-            Send(sendBuffer);
+            //Username = data;
+            //C_LOGIN packet = new C_LOGIN { Username = data };
+            //byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_LOGIN, packet);
+            //Send(sendBuffer);
 
             isLogin = true;
+            Console.WriteLine($"Connected");
         }
 
         public override void OnDisconnected(EndPoint endPoint)
