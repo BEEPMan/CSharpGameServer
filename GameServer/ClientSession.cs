@@ -58,7 +58,6 @@ namespace GameServer
         public void Handle_C_LOGIN(C_LOGIN data)
         {
             Username = data.Username;
-            Program.Room.Enter(this);
 
             S_LOGIN packet = new S_LOGIN { PlayerId = SessionId, Username = data.Username };
             byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_LOGIN, packet);
@@ -80,6 +79,8 @@ namespace GameServer
 
         public override void OnConnected(EndPoint endPoint)
         {
+            Program.Room.Enter(this);
+
             Console.WriteLine($"[{endPoint}] OnConnected");
         }
 
