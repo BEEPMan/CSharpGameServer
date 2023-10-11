@@ -148,6 +148,5 @@ namespace ServerCore
         public abstract int OnRecv(byte[] buffer);
         public abstract void OnSend(int numOfBytes);
         public abstract void OnDisconnected(EndPoint endPoint);
-
     }
 }

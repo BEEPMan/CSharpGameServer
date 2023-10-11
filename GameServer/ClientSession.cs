@@ -16,6 +16,8 @@ namespace GameServer
         public GameRoom Room { get; set; }
         public string Username { get; set; }
 
+        public int PacketCount { get; set; }
+
         public override void OnRecvPacket(byte[] buffer)
         {
             // Extract Header
@@ -30,7 +32,7 @@ namespace GameServer
             }
 
             // Extract Data
-            int dataSize = header.size;
+            int dataSize = header.size - headerSize;
             byte[] dataBytes = new byte[dataSize];
             Buffer.BlockCopy(buffer, headerSize, dataBytes, 0, dataSize);
 
@@ -48,6 +50,8 @@ namespace GameServer
                     {
                         C_CHAT packet = Serializer.Deserialize<C_CHAT>(dataStream);
                         Handle_C_CHAT(packet);
+                        Console.WriteLine($"Packet Size: {header.size}");
+                        PacketCount++;
                     }
                     break;
                 default:
@@ -74,7 +78,7 @@ namespace GameServer
             //byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_CHAT, packet);
             //SessionManager.Instance.BroadCasttoOthers(sendBuffer, SessionId);
 
-            Console.WriteLine($"[User {SessionId}] Chat: {data.Chat}");
+            Console.WriteLine($"[User {SessionId}] Chat: {data.Chat}()");
         }
 
         public override void OnConnected(EndPoint endPoint)
@@ -94,6 +98,7 @@ namespace GameServer
                 Room = null;
             }
             Console.WriteLine($"[Session {SessionId}] Disconnected");
+            Console.WriteLine($"[Session {SessionId}] PacketCount: {PacketCount}");
         }
 
         public override void OnSend(int numOfBytes)

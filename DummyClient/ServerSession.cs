@@ -2,6 +2,7 @@
 using ServerCore;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -30,7 +31,7 @@ namespace DummyClient
             }
 
             // Extract Data
-            int dataSize = header.size;
+            int dataSize = header.size - headerSize;
             byte[] dataBytes = new byte[dataSize];
             Buffer.BlockCopy(buffer, headerSize, dataBytes, 0, dataSize);
 
