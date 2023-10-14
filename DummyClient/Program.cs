@@ -24,7 +24,8 @@ namespace DummyClient
                 try
                 {
                     // string chat = Console.ReadLine();
-                    SessionManager.Instance.SendForEach("Hello World!");
+                    // SessionManager.Instance.SendForEach("Hello World!");
+                    SessionManager.Instance.MoveForEach(5.0f);
                 }
                 catch(Exception e)
                 {
@@ -32,7 +33,7 @@ namespace DummyClient
                     break;
                 }
 
-                Thread.Sleep(250);
+                Thread.Sleep(1000);
             }
         }
     }

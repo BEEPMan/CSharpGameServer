@@ -21,7 +21,7 @@ namespace ServerCore
 
             ushort size = (ushort)(dataBytes.Length + sizeof(ushort) * 2);
             Console.WriteLine($"Packet Size: {size}");
-            PacketHeader header = new PacketHeader { size = size, packetType = (ushort)packetType };
+            PacketHeader header = new PacketHeader { Size = size, PacketType = (ushort)packetType };
             using (MemoryStream headerStream = new MemoryStream())
             {
                 Serializer.Serialize(headerStream, header);

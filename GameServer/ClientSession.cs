@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -14,7 +15,6 @@ namespace GameServer
     {
         public int SessionId { get; set; }
         public GameRoom Room { get; set; }
-        public string Username { get; set; }
 
         public int PacketCount { get; set; }
 
@@ -32,53 +32,72 @@ namespace GameServer
             }
 
             // Extract Data
-            int dataSize = header.size - headerSize;
+            int dataSize = header.Size - headerSize;
             byte[] dataBytes = new byte[dataSize];
             Buffer.BlockCopy(buffer, headerSize, dataBytes, 0, dataSize);
 
-            switch ((PacketType)header.packetType)
+            switch ((PacketType)header.PacketType)
             {
-                case PacketType.PKT_C_LOGIN:
+                case PacketType.PKT_C_LEAVEGAME:
                     using (MemoryStream dataStream = new MemoryStream(dataBytes))
                     {
-                        C_LOGIN packet = Serializer.Deserialize<C_LOGIN>(dataStream);
-                        Handle_C_LOGIN(packet);
+                        C_LEAVEGAME data = Serializer.Deserialize<C_LEAVEGAME>(dataStream);
+                        Handle_C_LEAVEGAME(data);
                     }
                     break;
                 case PacketType.PKT_C_CHAT:
                     using (MemoryStream dataStream = new MemoryStream(dataBytes))
                     {
-                        C_CHAT packet = Serializer.Deserialize<C_CHAT>(dataStream);
-                        Handle_C_CHAT(packet);
-                        Console.WriteLine($"Packet Size: {header.size}");
-                        PacketCount++;
+                        C_CHAT data = Serializer.Deserialize<C_CHAT>(dataStream);
+                        Handle_C_CHAT(data);
+                    }
+                    break;
+                case PacketType.PKT_C_MOVE:
+                    using (MemoryStream dataStream = new MemoryStream(dataBytes))
+                    {
+                        C_MOVE data = Serializer.Deserialize<C_MOVE>(dataStream);
+                        Handle_C_MOVE(data);
                     }
                     break;
                 default:
+                    Console.WriteLine($"Unknown packet type: {header.PacketType}");
                     break;
             }
         }
 
-        public void Handle_C_LOGIN(C_LOGIN data)
+        public void Handle_C_LEAVEGAME(C_LEAVEGAME data)
         {
-            Username = data.Username;
+            S_LEAVEGAME packet = new S_LEAVEGAME { PlayerId = SessionId };
+            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_LEAVEGAME, packet);
+            Room.Broadcast(sendBuffer);
 
-            S_LOGIN packet = new S_LOGIN { PlayerId = SessionId, Username = data.Username };
-            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_LOGIN, packet);
-            SessionManager.Instance.BroadCast(sendBuffer);
-
-            Console.WriteLine($"[Session {SessionId}] Login: {data.Username}");
+            Console.WriteLine($"[User {SessionId}] Left Game");
+            SessionManager.Instance.RemoveSession(this);
+            if (Room != null)
+            {
+                Room.Leave(this);
+                Room = null;
+            }
         }
 
         public void Handle_C_CHAT(C_CHAT data)
         {
-            Room.Broadcast(this, data.Chat);
+            S_CHAT packet = new S_CHAT { PlayerId = SessionId, Chat = data.Chat };
+            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_CHAT, packet);
+            Room.Broadcast(sendBuffer);
 
-            //S_CHAT packet = new S_CHAT { PlayerId = SessionId, Chat = data.Chat };
-            //byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_CHAT, packet);
-            //SessionManager.Instance.BroadCasttoOthers(sendBuffer, SessionId);
+            Console.WriteLine($"[User {SessionId}] Chat: {data.Chat}");
+        }
 
-            Console.WriteLine($"[User {SessionId}] Chat: {data.Chat}()");
+        public void Handle_C_MOVE(C_MOVE data)
+        {
+            Room.Move(SessionId, data.PosX, data.PosY, data.PosZ);
+
+            S_MOVE packet = new S_MOVE { PlayerId = SessionId, PosX = data.PosX, PosY = data.PosY, PosZ = data.PosZ };
+            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_MOVE, packet);
+            Room.Broadcast(sendBuffer);
+
+            Console.WriteLine($"[User {SessionId}] Move: {data.PosX}, {data.PosY}, {data.PosZ}");
         }
 
         public override void OnConnected(EndPoint endPoint)
@@ -90,14 +109,10 @@ namespace GameServer
 
         public override void OnDisconnected(EndPoint endPoint)
         {
-            // TODO: User가 나갔음을 다른 User들에게 Broadcast
-            SessionManager.Instance.RemoveSession(this);
-            if (Room != null)
-            {
-                Room.Leave(this);
-                Room = null;
-            }
-            Console.WriteLine($"[Session {SessionId}] Disconnected");
+            // Console.WriteLine($"[Session {SessionId}] Disconnected");
+            S_LEAVEGAME packet = new S_LEAVEGAME { PlayerId = SessionId };
+            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_LEAVEGAME, packet);
+            Room.Broadcast(sendBuffer);
             Console.WriteLine($"[Session {SessionId}] PacketCount: {PacketCount}");
         }
 
