@@ -31,11 +31,14 @@ namespace DummyClient
             byte[] headerBytes = new byte[headerSize];
             Buffer.BlockCopy(buffer, 0, headerBytes, 0, headerSize);
 
-            PacketHeader header;
-            using (MemoryStream headerStream = new MemoryStream(headerBytes))
-            {
-                header = Serializer.Deserialize<PacketHeader>(headerStream);
-            }
+            PacketHeader header = new PacketHeader();
+            //using (MemoryStream headerStream = new MemoryStream(headerBytes))
+            //{
+            //    headerStream.Position = 0;
+            //    header = Serializer.Deserialize<PacketHeader>(headerStream);
+            //}
+            header.Size = BitConverter.ToUInt16(headerBytes, 0);
+            header.PacketType = BitConverter.ToUInt16(headerBytes, sizeof(ushort));
 
             // Extract Data
             int dataSize = header.Size - headerSize;
