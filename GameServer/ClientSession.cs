@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ProtoBuf;
 using ServerCore;
+using static System.Collections.Specialized.BitVector32;
 
 namespace GameServer
 {
@@ -16,21 +17,23 @@ namespace GameServer
         public int SessionId { get; set; }
         public GameRoom Room { get; set; }
 
-        public int PacketCount { get; set; }
+        object _lock = new object();
 
         public override void OnRecvPacket(byte[] buffer)
         {
+            Received++;
+
+            if(Room == null)
+            {
+                return;
+            }
+
             // Extract Header
             int headerSize = sizeof(ushort) * 2;
             byte[] headerBytes = new byte[headerSize];
             Buffer.BlockCopy(buffer, 0, headerBytes, 0, headerSize);
 
             PacketHeader header = new PacketHeader();
-            //using (MemoryStream headerStream = new MemoryStream(headerBytes))
-            //{
-            //    headerStream.Position = 0;
-            //    header = Serializer.Deserialize<PacketHeader>(headerStream);
-            //}
             header.Size = BitConverter.ToUInt16(headerBytes, 0);
             header.PacketType = BitConverter.ToUInt16(headerBytes, sizeof(ushort));
 
@@ -100,23 +103,28 @@ namespace GameServer
             byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_MOVE, packet);
             Room.Broadcast(sendBuffer);
 
-            Console.WriteLine($"[User {SessionId}] Move: {data.PosX}, {data.PosY}, {data.PosZ}");
+            // Console.WriteLine($"[User {SessionId}] Move: {data.PosX}, {data.PosY}, {data.PosZ}");
         }
 
         public override void OnConnected(EndPoint endPoint)
         {
             Program.Room.Enter(this);
 
+            S_ENTERGAME enter = new S_ENTERGAME { PlayerId = SessionId, PosX = 0.0f, PosY = 1.0f, PosZ = 0.0f };
+            byte[] enterGamePacket = Utils.SerializePacket(PacketType.PKT_S_ENTERGAME, enter);
+            Room.BroadcastEnterGame(enterGamePacket);
+
             Console.WriteLine($"[{endPoint}] OnConnected");
         }
 
         public override void OnDisconnected(EndPoint endPoint)
         {
-            // Console.WriteLine($"[Session {SessionId}] Disconnected");
-            S_LEAVEGAME packet = new S_LEAVEGAME { PlayerId = SessionId };
-            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_LEAVEGAME, packet);
-            Room.Broadcast(sendBuffer);
-            Console.WriteLine($"[Session {SessionId}] PacketCount: {PacketCount}");
+            lock(_lock)
+            {
+                Program.TotalRecvCount += Received;
+                Program.TotalSendCount += Sent;
+            }
+            Console.WriteLine($"Session #{SessionId}: Disconnected");
         }
 
         public override void OnSend(int numOfBytes)

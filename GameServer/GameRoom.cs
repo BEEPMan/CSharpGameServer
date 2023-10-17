@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using ServerCore;
@@ -25,7 +26,23 @@ namespace GameServer
             lock (_lock)
             {
                 foreach (ClientSession s in _sessions)
+                {
                     s.Send(packet);
+                    // s.Sent++;
+                }
+            }
+        }
+
+        public void BroadcastEnterGame(byte[] packet)
+        {
+            lock (_lock)
+            {
+                foreach (ClientSession s in _sessions)
+                {
+                    s.Send(packet);
+                    s.Sent++;
+                    Thread.Sleep(100);
+                }
             }
         }
 
@@ -47,10 +64,9 @@ namespace GameServer
                 }
                 byte[] playerListPacket = Utils.SerializePacket(PacketType.PKT_S_PLAYERLIST, players);
                 session.Send(playerListPacket);
+                // session.Sent++;
 
-                S_ENTERGAME enter = new S_ENTERGAME { PlayerId = session.SessionId, PosX = 0.0f, PosY = 1.0f, PosZ = 0.0f };
-                byte[] enterGamePacket = Utils.SerializePacket(PacketType.PKT_S_ENTERGAME, enter);
-                Broadcast(enterGamePacket);
+                
             }
         }
 

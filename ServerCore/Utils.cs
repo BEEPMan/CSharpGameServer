@@ -21,15 +21,8 @@ namespace ServerCore
             }
 
             ushort size = (ushort)(dataBytes.Length + sizeof(ushort) * 2);
-            Console.WriteLine($"size: {size}");
             BitConverter.TryWriteBytes(new Span<byte>(headerBytes, 0, sizeof(ushort)), size);
             BitConverter.TryWriteBytes(new Span<byte>(headerBytes, sizeof(ushort), sizeof(ushort)), (ushort)packetType);
-            //PacketHeader header = new PacketHeader { Size = size, PacketType = (ushort)packetType };
-            //using (MemoryStream headerStream = new MemoryStream())
-            //{
-            //    Serializer.Serialize(headerStream, header);
-            //    headerBytes = headerStream.ToArray();
-            //}
 
             byte[] finalPacket = new byte[headerBytes.Length + dataBytes.Length];
             Buffer.BlockCopy(headerBytes, 0, finalPacket, 0, headerBytes.Length);

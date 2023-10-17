@@ -11,6 +11,8 @@ namespace DummyClient
     {
         static void Main(string[] args)
         {
+            AppDomain.CurrentDomain.ProcessExit += new EventHandler(OnExit);
+
             string host = Dns.GetHostName();
             IPHostEntry ipHost = Dns.GetHostEntry(host);
             IPAddress ipAddr = ipHost.AddressList[0];
@@ -23,7 +25,6 @@ namespace DummyClient
             {
                 try
                 {
-                    // string chat = Console.ReadLine();
                     // SessionManager.Instance.SendForEach("Hello World!");
                     SessionManager.Instance.MoveForEach(5.0f);
                 }
@@ -32,9 +33,13 @@ namespace DummyClient
                     Console.WriteLine(e.ToString());
                     break;
                 }
-
                 Thread.Sleep(250);
             }
+        }
+
+        static void OnExit(object sender, EventArgs e)
+        {
+            SessionManager.Instance.DisconnectAll();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using ProtoBuf;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Net;
 using System.Net.Sockets;
@@ -25,6 +26,9 @@ namespace ServerCore
     {
         Socket _socket;
         int _disconnected = 0;
+
+        public int Received { get; set; }
+        public int Sent { get; set; }
 
         byte[] _recvBuffer = new byte[1024];
 
@@ -75,10 +79,17 @@ namespace ServerCore
             }
             foreach (byte[] buffer in _pendingList)
                 _sendArgs.BufferList = new List<ArraySegment<byte>> { new ArraySegment<byte>(buffer) };
-
-            bool pending = _socket.SendAsync(_sendArgs);
-            if (!pending)
-                OnSendCompleted(null, _sendArgs);
+            try
+            {
+                bool pending = _socket.SendAsync(_sendArgs);
+                if (!pending)
+                    OnSendCompleted(null, _sendArgs);
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine($"RegisterSend Failed {e}");
+                OnDisconnected(_socket.RemoteEndPoint);
+            }
         }
 
         private void OnSendCompleted(object sender, SocketAsyncEventArgs args)
@@ -92,6 +103,10 @@ namespace ServerCore
                         _sendArgs.BufferList = null;
                         _pendingList.Clear();
 
+                        lock(_lock)
+                        {
+                            Sent++;
+                        }
                         OnSend(_sendArgs.BytesTransferred);
 
                         if (_sendQueue.Count > 0)
@@ -124,6 +139,10 @@ namespace ServerCore
             {
                 try
                 {
+                    lock(_lock)
+                    {
+                        Received++;
+                    }
                     int processLen = OnRecv(_recvBuffer);
                     if(processLen < 0)
                     {

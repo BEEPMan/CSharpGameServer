@@ -24,19 +24,23 @@ namespace DummyClient
 
         public int SessionId { get; set; }
 
+        // public int Received { get; set; }
+        // public int Sent { get; set; }
+
+        StreamWriter _log;
+
+        object _lock = new object();
+
         public override void OnRecvPacket(byte[] buffer)
         {
+            // Received++;
+
             // Extract Header
             int headerSize = sizeof(ushort) * 2;
             byte[] headerBytes = new byte[headerSize];
             Buffer.BlockCopy(buffer, 0, headerBytes, 0, headerSize);
 
             PacketHeader header = new PacketHeader();
-            //using (MemoryStream headerStream = new MemoryStream(headerBytes))
-            //{
-            //    headerStream.Position = 0;
-            //    header = Serializer.Deserialize<PacketHeader>(headerStream);
-            //}
             header.Size = BitConverter.ToUInt16(headerBytes, 0);
             header.PacketType = BitConverter.ToUInt16(headerBytes, sizeof(ushort));
 
@@ -51,6 +55,7 @@ namespace DummyClient
                 case PacketType.PKT_S_ENTERGAME:
                     using (MemoryStream dataStream = new MemoryStream(dataBytes))
                     {
+                        // lock (_lock) { Received++; }
                         S_ENTERGAME packet = Serializer.Deserialize<S_ENTERGAME>(dataStream);
                         Handle_S_ENTERGAME(packet);
                     }
@@ -84,7 +89,7 @@ namespace DummyClient
                     }
                     break;
                 default:
-                    Console.WriteLine($"Unknown packet type: {header.PacketType}");
+                    Console.WriteLine($"Session #{SessionId}: Unknown packet type: {header.PacketType}");
                     break;
             }
         }
@@ -92,22 +97,23 @@ namespace DummyClient
         public void Handle_S_ENTERGAME(S_ENTERGAME data)
         {
             if (data.PlayerId == SessionId)
-                Console.WriteLine($"Login success");
-            else if(Players.ContainsKey(data.PlayerId))
             {
-                Players[data.PlayerId] = new Player { posX = data.PosX, posY = data.PosY, posZ = data.PosZ };
+                _log.WriteLine($"Login success");
+                // Console.WriteLine($"Session #{SessionId}: Login success");
             }
             else
             {
                 Players.Add(data.PlayerId, new Player { posX = data.PosX, posY = data.PosY, posZ = data.PosZ });
-                Console.WriteLine($"[User {data.PlayerId}] Enter game");
+                _log.WriteLine($"[User {data.PlayerId}] Enter game");
+                // Console.WriteLine($"Session #{SessionId}: [User {data.PlayerId}] Enter game");
             }
         }
 
         public void Handle_S_LEAVEGAME(S_LEAVEGAME data)
         {
             Players.Remove(data.PlayerId);
-            Console.WriteLine($"[User {data.PlayerId}] Leave game");
+            _log.WriteLine($"[User {data.PlayerId}] Leave game");
+            // Console.WriteLine($"Session #{SessionId}: [User {data.PlayerId}] Leave game");
         }
 
         public void Handle_S_PLAYERLIST(S_PLAYERLIST data)
@@ -117,34 +123,42 @@ namespace DummyClient
             float z = (float)rand.NextDouble() * 20 - 10;
             SessionId = data.PlayerId;
             Players.Add(SessionId, new Player { posX = x, posY = 1.0f, posZ = z });
+            _log = new StreamWriter($"C:\\Logs/log_{SessionId}.txt");
+            _log.WriteLine($"[PlayerList]");
             foreach (PlayerInfo player in data.Players)
             {
                 if (player.playerId == data.PlayerId) continue;
                 Players.Add(player.playerId, new Player { posX = player.posX, posY = player.posY, posZ = player.posZ });
+                _log.WriteLine($"User {player.playerId}: ({player.posX}, {player.posY}, {player.posZ})");
             }
+            _log.WriteLine($"[EndList]");
         }
 
         public void Handle_S_CHAT(S_CHAT data)
         {
             if (!Players.ContainsKey(data.PlayerId)) return;
-            Console.WriteLine($"[User {data.PlayerId}] Chat: {data.Chat}");
+            _log.WriteLine($"[User {data.PlayerId}] Chat: {data.Chat}");
+            // Console.WriteLine($"Session #{SessionId}: [User {data.PlayerId}] Chat: {data.Chat}");
         }
 
         public void Handle_S_MOVE(S_MOVE data)
         {
             if (!Players.ContainsKey(data.PlayerId)) return;
             Players[data.PlayerId] = new Player { posX = data.PosX, posY = data.PosY, posZ = data.PosZ };
-            Console.WriteLine($"[User {data.PlayerId}] Move: ({data.PosX}, {data.PosY}, {data.PosZ})");
+            _log.WriteLine($"[User {data.PlayerId}] Move: ({data.PosX}, {data.PosY}, {data.PosZ})");
+            // Console.WriteLine($"Session #{SessionId}: [User {data.PlayerId}] Move: ({data.PosX}, {data.PosY}, {data.PosZ})");
         }
 
         public override void OnConnected(EndPoint endPoint)
         {
-            Console.WriteLine($"Connected");
+            // Console.WriteLine($"Session #{SessionId}: Connected");
         }
 
         public override void OnDisconnected(EndPoint endPoint)
         {
-            Console.WriteLine($"Disconnected");
+            _log.WriteLine($"Session #{SessionId}: Disconnected(Total Send Packet: {Sent}, Total Receive Packet: {Received})");
+            // Console.WriteLine($"Session #{SessionId}: Disconnected(Total Send Packet: {Sent}, Total Receive Packet: {Received})");
+            _log.Close();
         }
 
         public override void OnSend(int numOfBytes)

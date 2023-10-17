@@ -60,7 +60,17 @@ namespace DummyClient
                     C_MOVE packet = new C_MOVE { PosX = posX, PosY = posY, PosZ = posZ };
                     byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_MOVE, packet);
                     session.Send(sendBuffer);
+
+                    session.Sent++;
                 }
+            }
+        }
+
+        public void DisconnectAll()
+        {
+            foreach (Session session in _sessions)
+            {
+                session.Disconnect();
             }
         }
 
@@ -71,8 +81,6 @@ namespace DummyClient
                 ServerSession session = new ServerSession();
                 // TODO : Add가 여러번 호출되고 있는 상태를 해결해야 함
                 _sessions.Add(session);
-
-                Console.WriteLine($"New session connected.");
 
                 return session;
             }
