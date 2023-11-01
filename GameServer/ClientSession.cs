@@ -19,11 +19,13 @@ namespace GameServer
 
         object _lock = new object();
 
-        public override void OnRecvPacket(byte[] buffer)
+        public override void OnRecvPacket(ArraySegment<byte> buffer)
         {
             Received++;
+            byte[] recvPacket = new byte[buffer.Count];
+            Buffer.BlockCopy(buffer.Array, buffer.Offset, recvPacket, 0, buffer.Count);
 
-            if(Room == null)
+            if (Room == null)
             {
                 return;
             }
@@ -31,7 +33,7 @@ namespace GameServer
             // Extract Header
             int headerSize = sizeof(ushort) * 2;
             byte[] headerBytes = new byte[headerSize];
-            Buffer.BlockCopy(buffer, 0, headerBytes, 0, headerSize);
+            Buffer.BlockCopy(recvPacket, 0, headerBytes, 0, headerSize);
 
             PacketHeader header = new PacketHeader();
             header.Size = BitConverter.ToUInt16(headerBytes, 0);
@@ -40,7 +42,7 @@ namespace GameServer
             // Extract Data
             int dataSize = header.Size - headerSize;
             byte[] dataBytes = new byte[dataSize];
-            Buffer.BlockCopy(buffer, headerSize, dataBytes, 0, dataSize);
+            Buffer.BlockCopy(recvPacket, headerSize, dataBytes, 0, dataSize);
 
             switch ((PacketType)header.PacketType)
             {

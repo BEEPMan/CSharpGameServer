@@ -53,6 +53,10 @@ namespace DummyClient
                         z = MathF.Sqrt(speed * speed - x * x);
                     else
                         z = -1 * MathF.Sqrt(speed * speed - x * x);
+                    if(session.Players.TryGetValue(session.SessionId, out Player player) == false)
+                    {
+                        continue;
+                    }
                     float posX = session.Players[session.SessionId].posX + x;
                     float posY = session.Players[session.SessionId].posY;
                     float posZ = session.Players[session.SessionId].posZ + z;

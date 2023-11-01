@@ -27,18 +27,21 @@ namespace DummyClient
         // public int Received { get; set; }
         // public int Sent { get; set; }
 
+        // Logger _log;
         StreamWriter _log;
 
         object _lock = new object();
 
-        public override void OnRecvPacket(byte[] buffer)
+        public override void OnRecvPacket(ArraySegment<byte> buffer)
         {
             // Received++;
+            byte[] recvPacket = new byte[buffer.Count];
+            Buffer.BlockCopy(buffer.Array, buffer.Offset, recvPacket, 0, buffer.Count);
 
             // Extract Header
             int headerSize = sizeof(ushort) * 2;
             byte[] headerBytes = new byte[headerSize];
-            Buffer.BlockCopy(buffer, 0, headerBytes, 0, headerSize);
+            Buffer.BlockCopy(recvPacket, 0, headerBytes, 0, headerSize);
 
             PacketHeader header = new PacketHeader();
             header.Size = BitConverter.ToUInt16(headerBytes, 0);
@@ -47,7 +50,7 @@ namespace DummyClient
             // Extract Data
             int dataSize = header.Size - headerSize;
             byte[] dataBytes = new byte[dataSize];
-            Buffer.BlockCopy(buffer, headerSize, dataBytes, 0, dataSize);
+            Buffer.BlockCopy(recvPacket, headerSize, dataBytes, 0, dataSize);
 
             // Deserialize based on packet type
             switch ((PacketType)header.PacketType)
@@ -99,13 +102,13 @@ namespace DummyClient
             if (data.PlayerId == SessionId)
             {
                 _log.WriteLine($"Login success");
-                // Console.WriteLine($"Session #{SessionId}: Login success");
+                // Task.Run(() => _log.WriteAsync($"Login success"));
             }
             else
             {
                 Players.Add(data.PlayerId, new Player { posX = data.PosX, posY = data.PosY, posZ = data.PosZ });
                 _log.WriteLine($"[User {data.PlayerId}] Enter game");
-                // Console.WriteLine($"Session #{SessionId}: [User {data.PlayerId}] Enter game");
+                // Task.Run(() => _log.WriteAsync($"[User {data.PlayerId}] Enter game"));
             }
         }
 
@@ -113,7 +116,7 @@ namespace DummyClient
         {
             Players.Remove(data.PlayerId);
             _log.WriteLine($"[User {data.PlayerId}] Leave game");
-            // Console.WriteLine($"Session #{SessionId}: [User {data.PlayerId}] Leave game");
+            // Task.Run(() => _log.WriteAsync($"[User {data.PlayerId}] Leave game"));
         }
 
         public void Handle_S_PLAYERLIST(S_PLAYERLIST data)
@@ -125,6 +128,8 @@ namespace DummyClient
             Players.Add(SessionId, new Player { posX = x, posY = 1.0f, posZ = z });
             _log = new StreamWriter($"C:\\Logs/log_{SessionId}.txt");
             _log.WriteLine($"[PlayerList]");
+            // _log = new Logger($"C:\\Logs/log_{SessionId}.txt");
+            // Task.Run(() => _log.WriteAsync($"[PlayerList]"));
             foreach (PlayerInfo player in data.Players)
             {
                 if (player.playerId == data.PlayerId) continue;
@@ -132,13 +137,15 @@ namespace DummyClient
                 _log.WriteLine($"User {player.playerId}: ({player.posX}, {player.posY}, {player.posZ})");
             }
             _log.WriteLine($"[EndList]");
+            // Task.Run(() => _log.WriteAsync($"[EndList]"));
+            Task.WaitAll();
         }
 
         public void Handle_S_CHAT(S_CHAT data)
         {
             if (!Players.ContainsKey(data.PlayerId)) return;
             _log.WriteLine($"[User {data.PlayerId}] Chat: {data.Chat}");
-            // Console.WriteLine($"Session #{SessionId}: [User {data.PlayerId}] Chat: {data.Chat}");
+            // Task.Run(() => _log.WriteAsync($"[User {data.PlayerId}] Chat: {data.Chat}"));
         }
 
         public void Handle_S_MOVE(S_MOVE data)
@@ -146,19 +153,26 @@ namespace DummyClient
             if (!Players.ContainsKey(data.PlayerId)) return;
             Players[data.PlayerId] = new Player { posX = data.PosX, posY = data.PosY, posZ = data.PosZ };
             _log.WriteLine($"[User {data.PlayerId}] Move: ({data.PosX}, {data.PosY}, {data.PosZ})");
-            // Console.WriteLine($"Session #{SessionId}: [User {data.PlayerId}] Move: ({data.PosX}, {data.PosY}, {data.PosZ})");
+            // Task.Run(() => _log.WriteAsync($"[User {data.PlayerId}] Move: ({data.PosX}, {data.PosY}, {data.PosZ})"));
         }
 
         public override void OnConnected(EndPoint endPoint)
         {
-            // Console.WriteLine($"Session #{SessionId}: Connected");
+
         }
 
         public override void OnDisconnected(EndPoint endPoint)
         {
+            if (SessionId == 1)
+            {
+                Console.WriteLine($"Received");
+            }
             _log.WriteLine($"Session #{SessionId}: Disconnected(Total Send Packet: {Sent}, Total Receive Packet: {Received})");
-            // Console.WriteLine($"Session #{SessionId}: Disconnected(Total Send Packet: {Sent}, Total Receive Packet: {Received})");
+            // Task.Run(() => _log.WriteAsync($"Session #{SessionId}: Disconnected(Total Send Packet: {Sent}, Total Receive Packet: {Received})"));
+            _log.Flush();
             _log.Close();
+            // Task.Run(() => _log.CloseAsync());
+            // Task.WaitAll();
         }
 
         public override void OnSend(int numOfBytes)
