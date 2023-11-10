@@ -23,7 +23,7 @@ namespace DummyClient
             Connector connector = new Connector();
             connector.Connect(endPoint, () => { return SessionManager.Instance.AddSession(); }, 9);
 
-            Thread thread = new Thread(new ThreadStart(KeyEventWork));
+            Thread thread = new Thread(new ThreadStart(MoveWork));
             thread.Start();
 
             while(true)
@@ -31,7 +31,7 @@ namespace DummyClient
                 try
                 {
                     // SessionManager.Instance.SendForEach("Hello World!");
-                    SessionManager.Instance.MoveForEach(5.0f);
+                    SessionManager.Instance.SendMove();
 
                 }
                 catch(Exception e)
@@ -51,6 +51,18 @@ namespace DummyClient
             while(Console.ReadKey().Key != ConsoleKey.Q)
             {
                 Thread.Sleep(100);
+            }
+
+            SessionManager.Instance.DisconnectAll();
+            Console.WriteLine("Disconnected all sessions.");
+        }
+
+        public static void MoveWork()
+        {
+            while(Console.ReadKey().Key != ConsoleKey.Q)
+            {
+                SessionManager.Instance.MoveForEach(5.0f);
+                Thread.Sleep(250);
             }
 
             SessionManager.Instance.DisconnectAll();

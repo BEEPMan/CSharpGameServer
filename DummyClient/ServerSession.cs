@@ -11,16 +11,9 @@ using System.Threading.Tasks;
 
 namespace DummyClient
 {
-    public struct Player
-    {
-        public float posX;
-        public float posY;
-        public float posZ;
-    }
-
     public class ServerSession : PacketSession
     {
-        public Dictionary<int, Player> Players = new Dictionary<int, Player>();
+        
 
         public int SessionId { get; set; }
 
@@ -106,7 +99,6 @@ namespace DummyClient
             }
             else
             {
-                Players.Add(data.PlayerId, new Player { posX = data.PosX, posY = data.PosY, posZ = data.PosZ });
                 _log.WriteLine($"[User {data.PlayerId}] Enter game");
                 // Task.Run(() => _log.WriteAsync($"[User {data.PlayerId}] Enter game"));
             }
@@ -114,7 +106,7 @@ namespace DummyClient
 
         public void Handle_S_LEAVEGAME(S_LEAVEGAME data)
         {
-            Players.Remove(data.PlayerId);
+            SessionManager.Instance.Players.Remove(data.PlayerId);
             _log.WriteLine($"[User {data.PlayerId}] Leave game");
             // Task.Run(() => _log.WriteAsync($"[User {data.PlayerId}] Leave game"));
         }
@@ -125,15 +117,13 @@ namespace DummyClient
             float x = (float)rand.NextDouble() * 20 - 10;
             float z = (float)rand.NextDouble() * 20 - 10;
             SessionId = data.PlayerId;
-            Players.Add(SessionId, new Player { posX = x, posY = 1.0f, posZ = z });
+            SessionManager.Instance.Players.Add(SessionId, new Player(x, 1.0f, z));
             _log = new StreamWriter($"C:\\Logs/log_{SessionId}.txt");
             _log.WriteLine($"[PlayerList]");
             // _log = new Logger($"C:\\Logs/log_{SessionId}.txt");
             // Task.Run(() => _log.WriteAsync($"[PlayerList]"));
             foreach (PlayerInfo player in data.Players)
             {
-                if (player.playerId == data.PlayerId) continue;
-                Players.Add(player.playerId, new Player { posX = player.posX, posY = player.posY, posZ = player.posZ });
                 _log.WriteLine($"User {player.playerId}: ({player.posX}, {player.posY}, {player.posZ})");
             }
             _log.WriteLine($"[EndList]");
@@ -143,15 +133,14 @@ namespace DummyClient
 
         public void Handle_S_CHAT(S_CHAT data)
         {
-            if (!Players.ContainsKey(data.PlayerId)) return;
+            if (!SessionManager.Instance.Players.ContainsKey(data.PlayerId)) return;
             _log.WriteLine($"[User {data.PlayerId}] Chat: {data.Chat}");
             // Task.Run(() => _log.WriteAsync($"[User {data.PlayerId}] Chat: {data.Chat}"));
         }
 
         public void Handle_S_MOVE(S_MOVE data)
         {
-            if (!Players.ContainsKey(data.PlayerId)) return;
-            Players[data.PlayerId] = new Player { posX = data.PosX, posY = data.PosY, posZ = data.PosZ };
+            if (!SessionManager.Instance.Players.ContainsKey(data.PlayerId)) return;
             _log.WriteLine($"[User {data.PlayerId}] Move: ({data.PosX}, {data.PosY}, {data.PosZ})");
             // Task.Run(() => _log.WriteAsync($"[User {data.PlayerId}] Move: ({data.PosX}, {data.PosY}, {data.PosZ})"));
         }
