@@ -41,7 +41,7 @@ namespace GameServer
                 {
                     s.Send(packet);
                     s.Sent++;
-                    Thread.Sleep(100);
+                    //Thread.Sleep(100);
                 }
             }
         }
