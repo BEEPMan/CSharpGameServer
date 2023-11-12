@@ -7,7 +7,7 @@ namespace GameServer
 {
     class Program
     {
-        public static StreamWriter Log = new StreamWriter($"C:\\Logs/log_Server.txt");
+        public static StreamWriter Log;
 
         static Listener _listener = new Listener();
 
@@ -18,6 +18,9 @@ namespace GameServer
 
         static void Main(string[] args)
         {
+            string path = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName + $"\\..\\..\\Logs/";
+            Log = new StreamWriter(path + "log_Server.txt");
+
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(OnExit);
 
             string host = Dns.GetHostName();

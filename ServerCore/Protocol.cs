@@ -107,6 +107,15 @@ namespace ServerCore
 
         [ProtoBuf.ProtoMember(3)]
         public float PosZ { get; set; }
+
+        [ProtoBuf.ProtoMember(4)]
+        public float VelX { get; set; }
+
+        [ProtoBuf.ProtoMember(5)]
+        public float VelY { get; set; }
+
+        [ProtoBuf.ProtoMember(6)]
+        public float VelZ { get; set; }
     }
 
     [ProtoBuf.ProtoContract]
@@ -123,5 +132,14 @@ namespace ServerCore
 
         [ProtoBuf.ProtoMember(4)]
         public float PosZ { get; set; }
+
+        [ProtoBuf.ProtoMember(5)]
+        public float VelX { get; set; }
+
+        [ProtoBuf.ProtoMember(6)]
+        public float VelY { get; set; }
+
+        [ProtoBuf.ProtoMember(7)]
+        public float VelZ { get; set; }
     }
 }

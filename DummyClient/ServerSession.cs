@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Numerics;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,8 +23,6 @@ namespace DummyClient
 
         // Logger _log;
         StreamWriter _log;
-
-        object _lock = new object();
 
         public override void OnRecvPacket(ArraySegment<byte> buffer)
         {
@@ -106,7 +105,7 @@ namespace DummyClient
 
         public void Handle_S_LEAVEGAME(S_LEAVEGAME data)
         {
-            SessionManager.Instance.Players.Remove(data.PlayerId);
+            SessionManager.Instance.Players.TryRemove(data.PlayerId, out _);
             _log.WriteLine($"[User {data.PlayerId}] Leave game");
             // Task.Run(() => _log.WriteAsync($"[User {data.PlayerId}] Leave game"));
         }
@@ -117,8 +116,13 @@ namespace DummyClient
             float x = (float)rand.NextDouble() * 20 - 10;
             float z = (float)rand.NextDouble() * 20 - 10;
             SessionId = data.PlayerId;
-            SessionManager.Instance.Players.Add(SessionId, new Player(x, 1.0f, z));
-            _log = new StreamWriter($"C:\\Logs/log_{SessionId}.txt");
+            SessionManager.Instance.Players.TryAdd(SessionId, new Player(x, 1.0f, z));
+            string path = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName + $"\\..\\..\\Logs/";
+            if (Directory.Exists(path) == false)
+            {
+                Directory.CreateDirectory(path);
+            }
+            _log = new StreamWriter(path + $"log_{SessionId}.txt");
             _log.WriteLine($"[PlayerList]");
             // _log = new Logger($"C:\\Logs/log_{SessionId}.txt");
             // Task.Run(() => _log.WriteAsync($"[PlayerList]"));
@@ -141,7 +145,7 @@ namespace DummyClient
         public void Handle_S_MOVE(S_MOVE data)
         {
             if (!SessionManager.Instance.Players.ContainsKey(data.PlayerId)) return;
-            _log.WriteLine($"[User {data.PlayerId}] Move: ({data.PosX}, {data.PosY}, {data.PosZ})");
+            _log.WriteLine($"[User {data.PlayerId}] Move: ({data.PosX}, {data.PosY}, {data.PosZ}) ({data.VelX}, {data.VelY}, {data.VelZ})");
             // Task.Run(() => _log.WriteAsync($"[User {data.PlayerId}] Move: ({data.PosX}, {data.PosY}, {data.PosZ})"));
         }
 

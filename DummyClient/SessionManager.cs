@@ -1,4 +1,5 @@
 ﻿using ServerCore;
+using System.Collections.Concurrent;
 
 namespace DummyClient
 {
@@ -20,7 +21,7 @@ namespace DummyClient
             }
         }
 
-        public Dictionary<int, Player> Players = new Dictionary<int, Player>();
+        public ConcurrentDictionary<int, Player> Players = new ConcurrentDictionary<int, Player>();
 
         private List<ServerSession> _sessions = new List<ServerSession>();
         object _lock = new object();
@@ -48,10 +49,33 @@ namespace DummyClient
                     {
                         continue;
                     }
-                    C_MOVE packet = new C_MOVE { PosX = Players[session.SessionId].posX, PosY = Players[session.SessionId].posY, PosZ = Players[session.SessionId].posZ };
+                    C_MOVE packet = new C_MOVE { PosX = Players[session.SessionId].posX,
+                                                 PosY = Players[session.SessionId].posY,
+                                                 PosZ = Players[session.SessionId].posZ,
+                                                 VelX = Players[session.SessionId].velX,
+                                                 VelY = Players[session.SessionId].velY,
+                                                 VelZ = Players[session.SessionId].velZ,
+                    };
                     byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_MOVE, packet);
                     session.Send(sendBuffer);
                 }
+            }
+        }
+
+        public void SimulateMove(float speed)
+        {
+            float prevTime = 0.0f;
+            while(Program.moveEvents.Count > 0)
+            {
+                Program.MoveEvent moveEvent = Program.moveEvents.Dequeue();
+                if (Players.TryGetValue(moveEvent.playerId, out Player player) == false)
+                {
+                    continue;
+                }
+                Thread.Sleep((int)((moveEvent.startTime - prevTime) * 1000));
+                Players[moveEvent.playerId].SetVelocity(moveEvent.velX * speed, moveEvent.velY * speed, moveEvent.velZ * speed);
+                Task.Run(() => Players[moveEvent.playerId].Move(moveEvent.time));
+                prevTime = moveEvent.startTime;
             }
         }
 

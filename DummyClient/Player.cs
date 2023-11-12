@@ -48,11 +48,18 @@ namespace DummyClient
             velZ = z;
         }
 
-        public void Move(float sec)
+        public async Task Move(float sec)
         {
-            posX += velX * sec;
-            posY += velY * sec;
-            posZ += velZ * sec;
+            DateTime startTime = DateTime.UtcNow;
+            DateTime endTime = startTime.AddSeconds(sec);
+
+            while(DateTime.UtcNow < endTime)
+            {
+                posX += velX * (1f / 60f);
+                posY += velY * (1f / 60f);
+                posZ += velZ * (1f / 60f);
+                await Task.Delay(1000 / 60);
+            }
         }
     }
 }
