@@ -68,7 +68,7 @@ namespace DummyClient
             while(Program.moveEvents.Count > 0)
             {
                 Program.MoveEvent moveEvent = Program.moveEvents.Dequeue();
-                if (Players.TryGetValue(moveEvent.playerId, out Player player) == false)
+                if (Players.TryGetValue(moveEvent.playerId, out _) == false)
                 {
                     continue;
                 }
@@ -88,7 +88,7 @@ namespace DummyClient
                 {
                     continue;
                 }
-                if (Players.TryGetValue(session.SessionId, out Player player) == false)
+                if (Players.TryGetValue(session.SessionId, out _) == false)
                 {
                     continue;
                 }
