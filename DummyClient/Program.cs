@@ -32,19 +32,25 @@ namespace DummyClient
 
             CreateMoveEvents();
 
-            DateTime now = DateTime.Now;
-            DateTime scheduledTime = new DateTime(now.Year, now.Month, now.Day, 17, 28, 30);
+            //DateTime now = DateTime.Now;
+            //DateTime scheduledTime = new DateTime(now.Year, now.Month, now.Day, 1, 51, 30);
 
-            if(now > scheduledTime)
+            //if(now > scheduledTime)
+            //{
+            //    scheduledTime = now;
+            //}
+
+            //double initialDelay = (scheduledTime - now).TotalMilliseconds;
+
+            //Timer timer = new Timer(MoveWork, null, (int)initialDelay, Timeout.Infinite);
+
+            while (Console.ReadKey().Key != ConsoleKey.S)
             {
-                scheduledTime = now;
+                Thread.Sleep(100);
             }
 
-            double initialDelay = (scheduledTime - now).TotalMilliseconds;
-
-            Timer timer = new Timer(MoveWork, null, (int)initialDelay, Timeout.Infinite);
-
-            Thread.Sleep((int)initialDelay);
+            Thread thread = new Thread(MoveWork);
+            thread.Start();
 
             while (true)
             {
@@ -61,6 +67,8 @@ namespace DummyClient
                 }
                 Thread.Sleep(250);
             }
+
+            thread.Join();
         }
 
         public static void KeyEventWork()
@@ -74,7 +82,7 @@ namespace DummyClient
             Console.WriteLine("Disconnected all sessions.");
         }
 
-        public static void MoveWork(object state)
+        public static void MoveWork()
         {
             //while (Console.ReadKey().Key != ConsoleKey.Q)
             //{
