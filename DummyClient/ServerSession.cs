@@ -93,6 +93,7 @@ namespace DummyClient
         {
             if (data.PlayerId == SessionId)
             {
+                SessionManager.Instance.Players[SessionId].SetPosition(data.PosX, data.PosY, data.PosZ);
                 _log.WriteLine($"Login success");
                 // Task.Run(() => _log.WriteAsync($"Login success"));
             }
@@ -112,11 +113,8 @@ namespace DummyClient
 
         public void Handle_S_PLAYERLIST(S_PLAYERLIST data)
         {
-            Random rand = new Random();
-            float x = (float)rand.NextDouble() * 20 - 10;
-            float z = (float)rand.NextDouble() * 20 - 10;
             SessionId = data.PlayerId;
-            SessionManager.Instance.Players.TryAdd(SessionId, new Player(x, 1.0f, z));
+            SessionManager.Instance.Players.TryAdd(SessionId, new Player(0.0f, 1.0f, 0.0f));
             string path = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName + $"\\..\\..\\Logs/";
             if (Directory.Exists(path) == false)
             {

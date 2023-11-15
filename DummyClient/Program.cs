@@ -32,10 +32,21 @@ namespace DummyClient
 
             CreateMoveEvents();
 
-            Thread thread = new Thread(new ThreadStart(MoveWork));
-            thread.Start();
+            DateTime now = DateTime.Now;
+            DateTime scheduledTime = new DateTime(now.Year, now.Month, now.Day, 17, 28, 30);
 
-            while(true)
+            if(now > scheduledTime)
+            {
+                scheduledTime = now;
+            }
+
+            double initialDelay = (scheduledTime - now).TotalMilliseconds;
+
+            Timer timer = new Timer(MoveWork, null, (int)initialDelay, Timeout.Infinite);
+
+            Thread.Sleep((int)initialDelay);
+
+            while (true)
             {
                 try
                 {
@@ -50,8 +61,6 @@ namespace DummyClient
                 }
                 Thread.Sleep(250);
             }
-
-            thread.Join();
         }
 
         public static void KeyEventWork()
@@ -65,7 +74,7 @@ namespace DummyClient
             Console.WriteLine("Disconnected all sessions.");
         }
 
-        public static void MoveWork()
+        public static void MoveWork(object state)
         {
             //while (Console.ReadKey().Key != ConsoleKey.Q)
             //{
@@ -73,7 +82,7 @@ namespace DummyClient
             //    Thread.Sleep(250);
             //}
 
-            Thread.Sleep(5000);
+            // Thread.Sleep(5000);
 
             SessionManager.Instance.SimulateMove(5.0f);
 
@@ -134,6 +143,15 @@ namespace DummyClient
                         velY = 0,
                         velZ = float.Parse(split[4])
                     }, startTime);
+                    moveEvents.Enqueue(new MoveEvent()
+                    {
+                        startTime = 30.0f,
+                        time = 10.0f,
+                        playerId = playerId,
+                        velX = 0,
+                        velY = 0,
+                        velZ = 0
+                    }, 30.0f);
                     break;
                 }
 
