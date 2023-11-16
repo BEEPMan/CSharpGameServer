@@ -117,11 +117,12 @@ namespace GameServer
 
         public override void OnConnected(EndPoint endPoint)
         {
-            Program.Room.Enter(this);
-
             Random rand = new Random();
             float x = (float)rand.NextDouble() * 20 - 10;
             float z = (float)rand.NextDouble() * 20 - 10;
+
+            Program.Room.Enter(this, x, 1.0f, z);
+
             S_ENTERGAME enter = new S_ENTERGAME { PlayerId = SessionId, PosX = x, PosY = 1.0f, PosZ = z };
             byte[] enterGamePacket = Utils.SerializePacket(PacketType.PKT_S_ENTERGAME, enter);
             Room.BroadcastEnterGame(enterGamePacket);

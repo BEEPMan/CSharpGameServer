@@ -64,7 +64,9 @@ namespace DummyClient
 
         public void SimulateMove(float speed)
         {
+            Console.WriteLine(DateTime.Now.Second + (float) DateTime.Now.Millisecond / 1000);
             float prevTime = 0.0f;
+            DateTime start = DateTime.Now;
             while(Program.moveEvents.Count > 0)
             {
                 Program.MoveEvent moveEvent = Program.moveEvents.Dequeue();
@@ -72,11 +74,13 @@ namespace DummyClient
                 {
                     continue;
                 }
-                Thread.Sleep((int)((moveEvent.startTime - prevTime) * 1000));
+                if (moveEvent.startTime - prevTime > 0) 
+                    Thread.Sleep((int)((moveEvent.startTime - prevTime) * 1000));
+                prevTime = (float)((DateTime.Now - start).TotalMilliseconds / 1000);
                 Players[moveEvent.playerId].SetVelocity(moveEvent.velX * speed, moveEvent.velY * speed, moveEvent.velZ * speed);
                 Task.Run(() => Players[moveEvent.playerId].Move(moveEvent.time));
-                prevTime = moveEvent.startTime;
             }
+            Console.WriteLine(DateTime.Now.Second + (float) DateTime.Now.Millisecond / 1000);
         }
 
         public void MoveForEach(float speed)

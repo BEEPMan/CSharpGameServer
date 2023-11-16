@@ -10,16 +10,24 @@ namespace DummyClient
 {
     class Program
     {
+        public struct MoveEvent
+        {
+            public float startTime;
+            public float time;
+
+            public int playerId;
+
+            public float velX;
+            public float velY;
+            public float velZ;
+        }
+
         public static int DUMMY_COUNT = 9;
 
         public static PriorityQueue<MoveEvent, float> moveEvents = new PriorityQueue<MoveEvent, float>();
 
-        // public static Dictionary<int, List<MoveEvent>> moveEvents = new Dictionary<int, List<MoveEvent>>();
-
         static void Main(string[] args)
         {
-            // AppDomain.CurrentDomain.ProcessExit += new EventHandler(OnExit);
-
             string host = Dns.GetHostName();
             IPHostEntry ipHost = Dns.GetHostEntry(host);
             IPAddress ipAddr = ipHost.AddressList[0];
@@ -31,18 +39,6 @@ namespace DummyClient
             connector.Connect(endPoint, () => { return SessionManager.Instance.AddSession(); }, DUMMY_COUNT);
 
             CreateMoveEvents();
-
-            //DateTime now = DateTime.Now;
-            //DateTime scheduledTime = new DateTime(now.Year, now.Month, now.Day, 1, 51, 30);
-
-            //if(now > scheduledTime)
-            //{
-            //    scheduledTime = now;
-            //}
-
-            //double initialDelay = (scheduledTime - now).TotalMilliseconds;
-
-            //Timer timer = new Timer(MoveWork, null, (int)initialDelay, Timeout.Infinite);
 
             while (Console.ReadKey().Key != ConsoleKey.S)
             {
@@ -71,27 +67,8 @@ namespace DummyClient
             thread.Join();
         }
 
-        public static void KeyEventWork()
-        {
-            while(Console.ReadKey().Key != ConsoleKey.Q)
-            {
-                Thread.Sleep(100);
-            }
-
-            SessionManager.Instance.DisconnectAll();
-            Console.WriteLine("Disconnected all sessions.");
-        }
-
         public static void MoveWork()
         {
-            //while (Console.ReadKey().Key != ConsoleKey.Q)
-            //{
-            //    SessionManager.Instance.MoveForEach(5.0f);
-            //    Thread.Sleep(250);
-            //}
-
-            // Thread.Sleep(5000);
-
             SessionManager.Instance.SimulateMove(5.0f);
 
             while (Console.ReadKey().Key != ConsoleKey.Q)
@@ -101,18 +78,6 @@ namespace DummyClient
 
             SessionManager.Instance.DisconnectAll();
             Console.WriteLine("Disconnected all sessions.");
-        }
-
-        public struct MoveEvent
-        {
-            public float startTime;
-            public float time;
-
-            public int playerId;
-
-            public float velX;
-            public float velY;
-            public float velZ;
         }
 
         public static void CreateMoveEvents()
@@ -140,29 +105,6 @@ namespace DummyClient
                 float time = float.Parse(split[0]);
                 float startTime = float.Parse(split[1]);
 
-                if (time + startTime >= 30.0f)
-                {
-                    moveEvents.Enqueue(new MoveEvent()
-                    {
-                        startTime = startTime,
-                        time = 30.0f - startTime,
-                        playerId = playerId,
-                        velX = float.Parse(split[3]),
-                        velY = 0,
-                        velZ = float.Parse(split[4])
-                    }, startTime);
-                    moveEvents.Enqueue(new MoveEvent()
-                    {
-                        startTime = 30.0f,
-                        time = 10.0f,
-                        playerId = playerId,
-                        velX = 0,
-                        velY = 0,
-                        velZ = 0
-                    }, 30.0f);
-                    break;
-                }
-
                 moveEvents.Enqueue(new MoveEvent()
                 {
                     startTime = startTime,
@@ -174,10 +116,5 @@ namespace DummyClient
                 }, startTime);
             }
         }
-
-        //static void OnExit(object sender, EventArgs e)
-        //{
-        //    SessionManager.Instance.DisconnectAll();
-        //}
     }
 }

@@ -46,12 +46,12 @@ namespace GameServer
             }
         }
 
-        public void Enter(ClientSession session)
+        public void Enter(ClientSession session, float x, float y, float z)
         {
             lock (_lock)
             {
                 _sessions.Add(session);
-                Players.Add(session.SessionId, new Player { posX = 0, posY = 1, posZ = 0 });
+                Players.Add(session.SessionId, new Player { posX = x, posY = y, posZ = z });
                 session.Room = this;
 
                 S_PLAYERLIST players = new S_PLAYERLIST();
