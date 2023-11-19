@@ -45,7 +45,6 @@ namespace GameServer
             foreach (int index in _sessions.Keys)
             {
                 _sessions[index].Send(data);
-                _sessions[index].Sent++;
             }
         }
 
@@ -56,7 +55,6 @@ namespace GameServer
                 if (index == sessionId)
                     continue;
                 _sessions[index].Send(data);
-                _sessions[index].Sent++;
             }
         }
     }

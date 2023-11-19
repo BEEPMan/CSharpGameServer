@@ -42,11 +42,7 @@ namespace ServerCore
         Socket _socket;
         int _disconnected = 0;
 
-        public int Received { get; set; }
-        public int Sent { get; set; }
-
-        // byte[] _recvBuffer = new byte[1024];
-        RecvBuffer _recvBuffer = new RecvBuffer(1024);
+        RecvBuffer _recvBuffer = new RecvBuffer(65535);
 
         object _lock = new object();
         Queue<byte[]> _sendQueue = new Queue<byte[]>();
@@ -65,6 +61,21 @@ namespace ServerCore
             _sendArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnSendCompleted);
 
             RegisterRecv();
+        }
+
+        public void Send(List<byte[]> sendBufferList)
+        {
+            if(sendBufferList.Count == 0)
+                return;
+
+            lock (_lock)
+            {
+                foreach (byte[] sendBuffer in sendBufferList)
+                    _sendQueue.Enqueue(sendBuffer);
+
+                if (_pendingList.Count == 0)
+                    RegisterSend();
+            }
         }
 
         public void Send(byte[] sendBuffer)
@@ -119,10 +130,6 @@ namespace ServerCore
                         _sendArgs.BufferList = null;
                         _pendingList.Clear();
 
-                        lock(_lock)
-                        {
-                            Sent++;
-                        }
                         OnSend(_sendArgs.BytesTransferred);
 
                         if (_sendQueue.Count > 0)
@@ -143,7 +150,6 @@ namespace ServerCore
         private void RegisterRecv()
         {
             _recvBuffer.Clean();
-            // _recvArgs.SetBuffer(_recvBuffer);
 
             ArraySegment<byte> segment = _recvBuffer.WriteSegment;
             _recvArgs.SetBuffer(segment.Array, segment.Offset, segment.Count);
@@ -159,10 +165,6 @@ namespace ServerCore
             {
                 try
                 {
-                    lock(_lock)
-                    {
-                        Received++;
-                    }
                     if(!_recvBuffer.OnWrite(args.BytesTransferred))
                     {
                         Disconnect();

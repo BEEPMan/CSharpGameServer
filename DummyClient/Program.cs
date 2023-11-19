@@ -22,7 +22,7 @@ namespace DummyClient
             public float velZ;
         }
 
-        public static int DUMMY_COUNT = 9;
+        public static int DUMMY_COUNT = 49;
 
         public static PriorityQueue<MoveEvent, float> moveEvents = new PriorityQueue<MoveEvent, float>();
 
@@ -32,6 +32,9 @@ namespace DummyClient
             IPHostEntry ipHost = Dns.GetHostEntry(host);
             IPAddress ipAddr = ipHost.AddressList[0];
             IPEndPoint endPoint = new IPEndPoint(ipAddr, 7777);
+
+            string path = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName + $"\\..\\..\\Logs/";
+            SessionManager.Instance.sessionLog = new StreamWriter(path + "sessionLog.txt");
 
             Thread.Sleep(1000);
 
@@ -52,7 +55,6 @@ namespace DummyClient
             {
                 try
                 {
-                    // SessionManager.Instance.SendForEach("Hello World!");
                     SessionManager.Instance.SendMove();
 
                 }
@@ -76,6 +78,7 @@ namespace DummyClient
                 Thread.Sleep(100);
             }
 
+            SessionManager.Instance.sessionLog.Close();
             SessionManager.Instance.DisconnectAll();
             Console.WriteLine("Disconnected all sessions.");
         }
@@ -93,8 +96,6 @@ namespace DummyClient
         public static void ReadTimeline(string path, int playerId)
         {
             StreamReader sr = new StreamReader(path);
-
-            List<MoveEvent> playerMoveEvents = new List<MoveEvent>();
 
             sr.ReadLine();
             while(sr.EndOfStream == false)

@@ -23,26 +23,16 @@ namespace DummyClient
 
         public ConcurrentDictionary<int, Player> Players = new ConcurrentDictionary<int, Player>();
 
+        public StreamWriter sessionLog;
+
         private List<ServerSession> _sessions = new List<ServerSession>();
         object _lock = new object();
-
-        public void SendForEach(string data)
-        {
-            lock (_lock)
-            {
-                foreach (ServerSession session in _sessions)
-                {
-                    C_CHAT packet = new C_CHAT { Chat = data };
-                    byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_CHAT, packet);
-                    session.Send(sendBuffer);
-                }
-            }
-        }
 
         public void SendMove()
         {
             lock (_lock)
             {
+                int count = 0;
                 foreach (ServerSession session in _sessions)
                 {
                     if (session.SessionId == 0 || !Players.ContainsKey(session.SessionId))
@@ -58,7 +48,10 @@ namespace DummyClient
                     };
                     byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_MOVE, packet);
                     session.Send(sendBuffer);
+                    count++;
+                    sessionLog.WriteLine($"session {session.SessionId} send C_Move");
                 }
+                sessionLog.WriteLine($"============== {count} / {_sessions.Count} sessions ==============");
             }
         }
 
@@ -83,30 +76,6 @@ namespace DummyClient
             Console.WriteLine(DateTime.Now.Second + (float) DateTime.Now.Millisecond / 1000);
         }
 
-        public void MoveForEach(float speed)
-        {
-            Random rand = new Random();
-            foreach (ServerSession session in _sessions)
-            {
-                if(session.SessionId == 0)
-                {
-                    continue;
-                }
-                if (Players.TryGetValue(session.SessionId, out _) == false)
-                {
-                    continue;
-                }
-                float x = (float)rand.NextDouble() * speed * 2 - speed;
-                float z;
-                if (rand.Next(0, 2) == 0)
-                    z = MathF.Sqrt(speed * speed - x * x);
-                else
-                    z = -1 * MathF.Sqrt(speed * speed - x * x);
-                Players[session.SessionId].SetVelocity(x, 0, z);
-                Players[session.SessionId].Move(0.25f);
-            }
-        }
-
         public void DisconnectAll()
         {
             foreach (Session session in _sessions)
@@ -122,6 +91,7 @@ namespace DummyClient
                 ServerSession session = new ServerSession();
                 // TODO : Add가 여러번 호출되고 있는 상태를 해결해야 함
                 _sessions.Add(session);
+                sessionLog.WriteLine($"session added");
 
                 return session;
             }

@@ -21,7 +21,6 @@ namespace GameServer
 
         public override void OnRecvPacket(ArraySegment<byte> buffer)
         {
-            Received++;
             byte[] recvPacket = new byte[buffer.Count];
             Buffer.BlockCopy(buffer.Array, buffer.Offset, recvPacket, 0, buffer.Count);
 
@@ -77,13 +76,15 @@ namespace GameServer
         {
             S_LEAVEGAME packet = new S_LEAVEGAME { PlayerId = SessionId };
             byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_LEAVEGAME, packet);
-            Room.Broadcast(sendBuffer);
+            GameRoom room = Room;
+            room.Push(() => { room.Broadcast(sendBuffer); });
 
             Console.WriteLine($"[User {SessionId}] Left Game");
             SessionManager.Instance.RemoveSession(this);
             if (Room != null)
             {
-                Room.Leave(this);
+                room = Room;
+                room.Push(() => { room.Leave(this); });   
                 Room = null;
             }
         }
@@ -92,14 +93,16 @@ namespace GameServer
         {
             S_CHAT packet = new S_CHAT { PlayerId = SessionId, Chat = data.Chat };
             byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_CHAT, packet);
-            Room.Broadcast(sendBuffer);
+            GameRoom room = Room;
+            room.Push(() => { room.Broadcast(sendBuffer); });
 
             Console.WriteLine($"[User {SessionId}] Chat: {data.Chat}");
         }
 
         public void Handle_C_MOVE(C_MOVE data)
         {
-            Room.Move(SessionId, data.PosX, data.PosY, data.PosZ);
+            GameRoom room = Room;
+            room.Push(() => { room.Move(SessionId, data.PosX, data.PosY, data.PosZ); });
 
             S_MOVE packet = new S_MOVE { PlayerId = SessionId,
                                          PosX = data.PosX, 
@@ -110,9 +113,7 @@ namespace GameServer
                                          VelZ = data.VelZ,
             };
             byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_MOVE, packet);
-            Room.Broadcast(sendBuffer);
-
-            // Console.WriteLine($"[User {SessionId}] Move: {data.PosX}, {data.PosY}, {data.PosZ}");
+            room.Push(() => { room.Broadcast(sendBuffer); });
         }
 
         public override void OnConnected(EndPoint endPoint)
@@ -121,22 +122,18 @@ namespace GameServer
             float x = (float)rand.NextDouble() * 20 - 10;
             float z = (float)rand.NextDouble() * 20 - 10;
 
-            Program.Room.Enter(this, x, 1.0f, z);
+            GameRoom room = Program.Room;
+            room.Push(() => { room.Enter(this, x, 1.0f, z); });
 
             S_ENTERGAME enter = new S_ENTERGAME { PlayerId = SessionId, PosX = x, PosY = 1.0f, PosZ = z };
             byte[] enterGamePacket = Utils.SerializePacket(PacketType.PKT_S_ENTERGAME, enter);
-            Room.BroadcastEnterGame(enterGamePacket);
+            room.Push(() => { room.Broadcast(enterGamePacket); });
 
             Console.WriteLine($"[{endPoint}] OnConnected");
         }
 
         public override void OnDisconnected(EndPoint endPoint)
         {
-            lock(_lock)
-            {
-                Program.TotalRecvCount += Received;
-                Program.TotalSendCount += Sent;
-            }
             Console.WriteLine($"Session #{SessionId}: Disconnected");
         }
 
