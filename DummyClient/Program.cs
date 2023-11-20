@@ -22,7 +22,7 @@ namespace DummyClient
             public float velZ;
         }
 
-        public static int DUMMY_COUNT = 49;
+        public static int DUMMY_COUNT = 9;
 
         public static PriorityQueue<MoveEvent, float> moveEvents = new PriorityQueue<MoveEvent, float>();
 

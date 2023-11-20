@@ -104,13 +104,16 @@ namespace GameServer
             GameRoom room = Room;
             room.Push(() => { room.Move(SessionId, data.PosX, data.PosY, data.PosZ); });
 
-            S_MOVE packet = new S_MOVE { PlayerId = SessionId,
-                                         PosX = data.PosX, 
-                                         PosY = data.PosY, 
-                                         PosZ = data.PosZ,
-                                         VelX = data.VelX,
-                                         VelY = data.VelY,
-                                         VelZ = data.VelZ,
+            S_MOVE packet = new S_MOVE
+            {
+                PlayerId = SessionId,
+                PosX = data.PosX,
+                PosY = data.PosY,
+                PosZ = data.PosZ,
+                VelX = data.VelX,
+                VelY = data.VelY,
+                VelZ = data.VelZ,
+                TimeStamp = data.TimeStamp
             };
             byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_MOVE, packet);
             room.Push(() => { room.Broadcast(sendBuffer); });

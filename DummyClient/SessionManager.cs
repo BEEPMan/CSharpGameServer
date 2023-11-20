@@ -39,12 +39,15 @@ namespace DummyClient
                     {
                         continue;
                     }
-                    C_MOVE packet = new C_MOVE { PosX = Players[session.SessionId].posX,
-                                                 PosY = Players[session.SessionId].posY,
-                                                 PosZ = Players[session.SessionId].posZ,
-                                                 VelX = Players[session.SessionId].velX,
-                                                 VelY = Players[session.SessionId].velY,
-                                                 VelZ = Players[session.SessionId].velZ,
+                    C_MOVE packet = new C_MOVE
+                    {
+                        PosX = Players[session.SessionId].posX,
+                        PosY = Players[session.SessionId].posY,
+                        PosZ = Players[session.SessionId].posZ,
+                        VelX = Players[session.SessionId].velX,
+                        VelY = Players[session.SessionId].velY,
+                        VelZ = Players[session.SessionId].velZ,
+                        TimeStamp = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds
                     };
                     byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_MOVE, packet);
                     session.Send(sendBuffer);
@@ -67,13 +70,19 @@ namespace DummyClient
                 {
                     continue;
                 }
-                if (moveEvent.startTime - prevTime > 0) 
+                if (moveEvent.startTime - prevTime > 0)
                     Thread.Sleep((int)((moveEvent.startTime - prevTime) * 1000));
                 prevTime = (float)((DateTime.Now - start).TotalMilliseconds / 1000);
                 Players[moveEvent.playerId].SetVelocity(moveEvent.velX * speed, moveEvent.velY * speed, moveEvent.velZ * speed);
                 Task.Run(() => Players[moveEvent.playerId].Move(moveEvent.time));
             }
             Console.WriteLine(DateTime.Now.Second + (float) DateTime.Now.Millisecond / 1000);
+            Console.WriteLine("=============== Simulation Result ===============");
+            for(int i=1;i<=Program.DUMMY_COUNT;i++)
+            {
+                Console.WriteLine($"Player {i} : {Players[i].posX}, {Players[i].posY}, {Players[i].posZ}");
+            }
+            Console.WriteLine("=================================================");
         }
 
         public void DisconnectAll()
@@ -89,7 +98,6 @@ namespace DummyClient
             lock (_lock)
             {
                 ServerSession session = new ServerSession();
-                // TODO : Add가 여러번 호출되고 있는 상태를 해결해야 함
                 _sessions.Add(session);
                 sessionLog.WriteLine($"session added");
 

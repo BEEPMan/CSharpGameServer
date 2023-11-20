@@ -116,6 +116,9 @@ namespace ServerCore
 
         [ProtoBuf.ProtoMember(6)]
         public float VelZ { get; set; }
+
+        [ProtoBuf.ProtoMember(7)]
+        public long TimeStamp { get; set; }
     }
 
     [ProtoBuf.ProtoContract]
@@ -141,5 +144,8 @@ namespace ServerCore
 
         [ProtoBuf.ProtoMember(7)]
         public float VelZ { get; set; }
+
+        [ProtoBuf.ProtoMember(8)]
+        public long TimeStamp { get; set; }
     }
 }
