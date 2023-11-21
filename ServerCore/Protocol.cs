@@ -16,6 +16,8 @@ namespace ServerCore
         PKT_S_CHAT = 6,
         PKT_C_MOVE = 7,
         PKT_S_MOVE = 8,
+        PKT_C_MOVE_V2 = 9,
+        PKT_S_MOVE_V2 = 10,
     }
 
     [ProtoBuf.ProtoContract]
@@ -109,6 +111,41 @@ namespace ServerCore
         public float PosZ { get; set; }
 
         [ProtoBuf.ProtoMember(4)]
+        public long TimeStamp { get; set; }
+    }
+
+    [ProtoBuf.ProtoContract]
+    public class S_MOVE
+    {
+        [ProtoBuf.ProtoMember(1)]
+        public int PlayerId { get; set; }
+
+        [ProtoBuf.ProtoMember(2)]
+        public float PosX { get; set; }
+
+        [ProtoBuf.ProtoMember(3)]
+        public float PosY { get; set; }
+
+        [ProtoBuf.ProtoMember(4)]
+        public float PosZ { get; set; }
+
+        [ProtoBuf.ProtoMember(5)]
+        public long TimeStamp { get; set; }
+    }
+
+    [ProtoBuf.ProtoContract]
+    public class C_MOVE_V2
+    {
+        [ProtoBuf.ProtoMember(1)]
+        public float PosX { get; set; }
+
+        [ProtoBuf.ProtoMember(2)]
+        public float PosY { get; set; }
+
+        [ProtoBuf.ProtoMember(3)]
+        public float PosZ { get; set; }
+
+        [ProtoBuf.ProtoMember(4)]
         public float VelX { get; set; }
 
         [ProtoBuf.ProtoMember(5)]
@@ -122,7 +159,7 @@ namespace ServerCore
     }
 
     [ProtoBuf.ProtoContract]
-    public class S_MOVE
+    public class S_MOVE_V2
     {
         [ProtoBuf.ProtoMember(1)]
         public int PlayerId { get; set; }

@@ -22,7 +22,7 @@ namespace DummyClient
             public float velZ;
         }
 
-        public static int DUMMY_COUNT = 99;
+        public static int DUMMY_COUNT = 49;
 
         public static Dictionary<int, Queue<MoveEvent>> moveEvents = new Dictionary<int, Queue<MoveEvent>>();
 
@@ -55,8 +55,8 @@ namespace DummyClient
             {
                 try
                 {
-                    SessionManager.Instance.SendMove();
-
+                    //SessionManager.Instance.SendMove();
+                    SessionManager.Instance.SendMove_v2();
                 }
                 catch(Exception e)
                 {

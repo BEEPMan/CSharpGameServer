@@ -66,6 +66,13 @@ namespace GameServer
                         Handle_C_MOVE(data);
                     }
                     break;
+                case PacketType.PKT_C_MOVE_V2:
+                    using (MemoryStream dataStream = new MemoryStream(dataBytes))
+                    {
+                        C_MOVE_V2 data = Serializer.Deserialize<C_MOVE_V2>(dataStream);
+                        Handle_C_MOVE_V2(data);
+                    }
+                    break;
                 default:
                     Console.WriteLine($"Unknown packet type: {header.PacketType}");
                     break;
@@ -110,12 +117,29 @@ namespace GameServer
                 PosX = data.PosX,
                 PosY = data.PosY,
                 PosZ = data.PosZ,
+                TimeStamp = data.TimeStamp
+            };
+            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_MOVE, packet);
+            room.Push(() => { room.Broadcast(sendBuffer); });
+        }
+
+        public void Handle_C_MOVE_V2(C_MOVE_V2 data)
+        {
+            GameRoom room = Room;
+            room.Push(() => { room.Move(SessionId, data.PosX, data.PosY, data.PosZ); });
+
+            S_MOVE_V2 packet = new S_MOVE_V2
+            {
+                PlayerId = SessionId,
+                PosX = data.PosX,
+                PosY = data.PosY,
+                PosZ = data.PosZ,
                 VelX = data.VelX,
                 VelY = data.VelY,
                 VelZ = data.VelZ,
                 TimeStamp = data.TimeStamp
             };
-            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_MOVE, packet);
+            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_MOVE_V2, packet);
             room.Push(() => { room.Broadcast(sendBuffer); });
         }
 

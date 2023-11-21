@@ -73,6 +73,13 @@ namespace DummyClient
                         Handle_S_MOVE(data);
                     }
                     break;
+                case PacketType.PKT_S_MOVE_V2:
+                    using (MemoryStream dataStream = new MemoryStream(dataBytes))
+                    {
+                        S_MOVE_V2 data = Serializer.Deserialize<S_MOVE_V2>(dataStream);
+                        Handle_S_MOVE_V2(data);
+                    }
+                    break;
                 default:
                     Console.WriteLine($"Session #{SessionId}: Unknown packet type: {header.PacketType}");
                     break;
@@ -105,6 +112,11 @@ namespace DummyClient
         }
 
         public void Handle_S_MOVE(S_MOVE data)
+        {
+            if (!SessionManager.Instance.Players.ContainsKey(data.PlayerId)) return;
+        }
+
+        public void Handle_S_MOVE_V2(S_MOVE_V2 data)
         {
             if (!SessionManager.Instance.Players.ContainsKey(data.PlayerId)) return;
         }

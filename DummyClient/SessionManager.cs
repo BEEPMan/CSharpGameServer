@@ -45,9 +45,6 @@ namespace DummyClient
                         PosX = Players[session.SessionId].posX,
                         PosY = Players[session.SessionId].posY,
                         PosZ = Players[session.SessionId].posZ,
-                        VelX = Players[session.SessionId].velX,
-                        VelY = Players[session.SessionId].velY,
-                        VelZ = Players[session.SessionId].velZ,
                         TimeStamp = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds
                     };
                     byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_MOVE, packet);
@@ -59,9 +56,39 @@ namespace DummyClient
             }
         }
 
+        public void SendMove_v2()
+        {
+            lock (_lock)
+            {
+                int count = 0;
+                foreach (ServerSession session in _sessions)
+                {
+                    if (session.SessionId == 0 || !Players.ContainsKey(session.SessionId))
+                    {
+                        continue;
+                    }
+                    C_MOVE_V2 packet = new C_MOVE_V2
+                    {
+                        PosX = Players[session.SessionId].posX,
+                        PosY = Players[session.SessionId].posY,
+                        PosZ = Players[session.SessionId].posZ,
+                        VelX = Players[session.SessionId].velX,
+                        VelY = Players[session.SessionId].velY,
+                        VelZ = Players[session.SessionId].velZ,
+                        TimeStamp = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds
+                    };
+                    byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_MOVE_V2, packet);
+                    session.Send(sendBuffer);
+                    count++;
+                    sessionLog.WriteLine($"session {session.SessionId} send C_Move_V2");
+                }
+                sessionLog.WriteLine($"============== {count} / {_sessions.Count} sessions ==============");
+            }
+        }
+
         private Stopwatch _stopwatch = new Stopwatch();
         private float _totalRunTime = 0.0f;
-        private float _speed = 5.0f;
+        private float _speed = 10.0f;
 
         public void SimulateMove()
         {
