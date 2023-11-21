@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static DummyClient.Program;
 
 namespace DummyClient
 {
@@ -16,6 +17,9 @@ namespace DummyClient
         public float velY;
         public float velZ;
 
+        public int playerId;
+
+        DateTime startTime;
         public Player()
         {
             posX = 0;
@@ -27,8 +31,9 @@ namespace DummyClient
             velZ = 0;
         }
 
-        public Player(float posX, float posY, float posZ)
+        public Player(int playerId, float posX, float posY, float posZ)
         {
+            this.playerId = playerId;
             this.posX = posX;
             this.posY = posY;
             this.posZ = posZ;
@@ -48,18 +53,11 @@ namespace DummyClient
             velZ = z;
         }
 
-        public async Task Move(float sec)
+        public void Move(float deltaTime)
         {
-            DateTime startTime = DateTime.UtcNow;
-            DateTime endTime = startTime.AddSeconds(sec);
-
-            while(DateTime.UtcNow < endTime)
-            {
-                posX += velX * (1f / 60f);
-                posY += velY * (1f / 60f);
-                posZ += velZ * (1f / 60f);
-                await Task.Delay(1000 / 60);
-            }
+            posX += velX * deltaTime;
+            posY += velY * deltaTime;
+            posZ += velZ * deltaTime;
         }
     }
 }

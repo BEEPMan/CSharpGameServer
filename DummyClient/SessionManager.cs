@@ -1,5 +1,6 @@
 ﻿using ServerCore;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace DummyClient
 {
@@ -58,31 +59,45 @@ namespace DummyClient
             }
         }
 
-        public void SimulateMove(float speed)
+        private Stopwatch _stopwatch = new Stopwatch();
+        private float _totalRunTime = 0.0f;
+        private float _speed = 5.0f;
+
+        public void SimulateMove()
         {
-            Console.WriteLine(DateTime.Now.Second + (float) DateTime.Now.Millisecond / 1000);
-            float prevTime = 0.0f;
-            DateTime start = DateTime.Now;
-            while(Program.moveEvents.Count > 0)
+            _stopwatch.Start();
+
+            while(_totalRunTime <= 30.0f)
             {
-                Program.MoveEvent moveEvent = Program.moveEvents.Dequeue();
-                if (Players.TryGetValue(moveEvent.playerId, out _) == false)
-                {
-                    continue;
-                }
-                if (moveEvent.startTime - prevTime > 0)
-                    Thread.Sleep((int)((moveEvent.startTime - prevTime) * 1000));
-                prevTime = (float)((DateTime.Now - start).TotalMilliseconds / 1000);
-                Players[moveEvent.playerId].SetVelocity(moveEvent.velX * speed, moveEvent.velY * speed, moveEvent.velZ * speed);
-                Task.Run(() => Players[moveEvent.playerId].Move(moveEvent.time));
+                Update();
+                Thread.Sleep(10);
             }
-            Console.WriteLine(DateTime.Now.Second + (float) DateTime.Now.Millisecond / 1000);
             Console.WriteLine("=============== Simulation Result ===============");
-            for(int i=1;i<=Program.DUMMY_COUNT;i++)
+            for (int i = 1; i <= Program.DUMMY_COUNT; i++)
             {
                 Console.WriteLine($"Player {i} : {Players[i].posX}, {Players[i].posY}, {Players[i].posZ}");
             }
             Console.WriteLine("=================================================");
+        }
+
+        public void Update()
+        {
+            float deltaTime = (float)(_stopwatch.Elapsed.TotalSeconds);
+            _totalRunTime += deltaTime;
+            _stopwatch.Restart();
+
+            foreach (KeyValuePair<int, Player> player in Players)
+            {
+                if (Program.moveEvents[player.Key].Count > 0)
+                {
+                    if (Program.moveEvents[player.Key].Peek().startTime <= _totalRunTime)
+                    {
+                        Program.MoveEvent moveEvent = Program.moveEvents[player.Key].Dequeue();
+                        player.Value.SetVelocity(moveEvent.velX * _speed, moveEvent.velY * _speed, moveEvent.velZ * _speed);
+                    }
+                }
+                player.Value.Move(deltaTime);
+            }
         }
 
         public void DisconnectAll()

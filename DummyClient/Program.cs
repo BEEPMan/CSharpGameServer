@@ -22,9 +22,9 @@ namespace DummyClient
             public float velZ;
         }
 
-        public static int DUMMY_COUNT = 9;
+        public static int DUMMY_COUNT = 99;
 
-        public static PriorityQueue<MoveEvent, float> moveEvents = new PriorityQueue<MoveEvent, float>();
+        public static Dictionary<int, Queue<MoveEvent>> moveEvents = new Dictionary<int, Queue<MoveEvent>>();
 
         static void Main(string[] args)
         {
@@ -71,7 +71,7 @@ namespace DummyClient
 
         public static void MoveWork()
         {
-            SessionManager.Instance.SimulateMove(5.0f);
+            SessionManager.Instance.SimulateMove();
 
             while (Console.ReadKey().Key != ConsoleKey.Q)
             {
@@ -97,6 +97,8 @@ namespace DummyClient
         {
             StreamReader sr = new StreamReader(path);
 
+            moveEvents.Add(playerId, new Queue<MoveEvent>());
+
             sr.ReadLine();
             while(sr.EndOfStream == false)
             {
@@ -106,7 +108,7 @@ namespace DummyClient
                 float time = float.Parse(split[0]);
                 float startTime = float.Parse(split[1]);
 
-                moveEvents.Enqueue(new MoveEvent()
+                moveEvents[playerId].Enqueue(new MoveEvent()
                 {
                     startTime = startTime,
                     time = time,
@@ -114,7 +116,7 @@ namespace DummyClient
                     velX = float.Parse(split[3]),
                     velY = 0,
                     velZ = float.Parse(split[4])
-                }, startTime);
+                });
             }
         }
     }

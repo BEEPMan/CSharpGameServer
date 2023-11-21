@@ -95,7 +95,7 @@ namespace DummyClient
         public void Handle_S_PLAYERLIST(S_PLAYERLIST data)
         {
             SessionId = data.PlayerId;
-            SessionManager.Instance.Players.TryAdd(SessionId, new Player(0.0f, 1.0f, 0.0f));
+            SessionManager.Instance.Players.TryAdd(SessionId, new Player(SessionId, 0.0f, 1.0f, 0.0f));
             Task.WaitAll();
         }
 
