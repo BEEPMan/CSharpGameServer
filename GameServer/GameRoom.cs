@@ -33,10 +33,10 @@ namespace GameServer
         {
             _pendingList.Add(packet);
 
-            foreach (ClientSession s in _sessions)
-            {
-                s.Send(packet);
-            }
+            //foreach (ClientSession s in _sessions)
+            //{
+            //    s.Send(packet);
+            //}
         }
 
         public void Flush()

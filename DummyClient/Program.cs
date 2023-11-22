@@ -22,7 +22,7 @@ namespace DummyClient
             public float velZ;
         }
 
-        public static int DUMMY_COUNT = 49;
+        public static int DUMMY_COUNT = 39;
 
         public static Dictionary<int, Queue<MoveEvent>> moveEvents = new Dictionary<int, Queue<MoveEvent>>();
 
