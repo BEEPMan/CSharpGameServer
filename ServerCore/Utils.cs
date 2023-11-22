@@ -9,7 +9,7 @@ namespace ServerCore
 {
     public class Utils
     {
-        public static byte[] SerializePacket(PacketType packetType, object data)
+        public static ArraySegment<byte> SerializePacket(PacketType packetType, object data)
         {
             byte[] headerBytes = new byte[sizeof(ushort) * 2];
             byte[] dataBytes;
@@ -24,11 +24,12 @@ namespace ServerCore
             BitConverter.TryWriteBytes(new Span<byte>(headerBytes, 0, sizeof(ushort)), size);
             BitConverter.TryWriteBytes(new Span<byte>(headerBytes, sizeof(ushort), sizeof(ushort)), (ushort)packetType);
 
-            byte[] finalPacket = new byte[headerBytes.Length + dataBytes.Length];
-            Buffer.BlockCopy(headerBytes, 0, finalPacket, 0, headerBytes.Length);
-            Buffer.BlockCopy(dataBytes, 0, finalPacket, headerBytes.Length, dataBytes.Length);
+            ArraySegment<byte> openSegment = SendBufferHelper.Open(4096);
+            Array.Copy(headerBytes, 0, openSegment.Array, openSegment.Offset, headerBytes.Length);
+            Array.Copy(dataBytes, 0, openSegment.Array, openSegment.Offset + headerBytes.Length, dataBytes.Length);
+            ArraySegment<byte> segment = SendBufferHelper.Close(headerBytes.Length + dataBytes.Length);
 
-            return finalPacket;
+            return segment;
         }
     }
 }

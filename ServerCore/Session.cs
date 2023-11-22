@@ -45,8 +45,8 @@ namespace ServerCore
         RecvBuffer _recvBuffer = new RecvBuffer(65535);
 
         object _lock = new object();
-        Queue<byte[]> _sendQueue = new Queue<byte[]>();
-        List<byte[]> _pendingList = new List<byte[]>();
+        Queue<ArraySegment<byte>> _sendQueue = new Queue<ArraySegment<byte>>();
+        List<ArraySegment<byte>> _pendingList = new List<ArraySegment<byte>>();
         SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();
         SocketAsyncEventArgs _recvArgs = new SocketAsyncEventArgs();
 
@@ -63,14 +63,14 @@ namespace ServerCore
             RegisterRecv();
         }
 
-        public void Send(List<byte[]> sendBufferList)
+        public void Send(List<ArraySegment<byte>> sendBufferList)
         {
             if(sendBufferList.Count == 0)
                 return;
 
             lock (_lock)
             {
-                foreach (byte[] sendBuffer in sendBufferList)
+                foreach (ArraySegment<byte> sendBuffer in sendBufferList)
                     _sendQueue.Enqueue(sendBuffer);
 
                 if (_pendingList.Count == 0)
@@ -78,7 +78,7 @@ namespace ServerCore
             }
         }
 
-        public void Send(byte[] sendBuffer)
+        public void Send(ArraySegment<byte> sendBuffer)
         {
             lock(_lock)
             {
@@ -102,11 +102,12 @@ namespace ServerCore
         {
             while(_sendQueue.Count > 0)
             {
-                byte[] buffer = _sendQueue.Dequeue();
+                ArraySegment<byte> buffer = _sendQueue.Dequeue();
                 _pendingList.Add(buffer);
             }
-            foreach (byte[] buffer in _pendingList)
-                _sendArgs.BufferList = new List<ArraySegment<byte>> { new ArraySegment<byte>(buffer) };
+
+            _sendArgs.BufferList = _pendingList;
+
             try
             {
                 bool pending = _socket.SendAsync(_sendArgs);

@@ -47,7 +47,7 @@ namespace DummyClient
                         PosZ = Players[session.SessionId].posZ,
                         TimeStamp = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds
                     };
-                    byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_MOVE, packet);
+                    ArraySegment<byte> sendBuffer = Utils.SerializePacket(PacketType.PKT_C_MOVE, packet);
                     session.Send(sendBuffer);
                     count++;
                     sessionLog.WriteLine($"session {session.SessionId} send C_Move");
@@ -77,10 +77,69 @@ namespace DummyClient
                         VelZ = Players[session.SessionId].velZ,
                         TimeStamp = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds
                     };
-                    byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_C_MOVE_V2, packet);
+                    ArraySegment<byte> sendBuffer = Utils.SerializePacket(PacketType.PKT_C_MOVE_V2, packet);
                     session.Send(sendBuffer);
                     count++;
                     sessionLog.WriteLine($"session {session.SessionId} send C_Move_V2");
+                }
+                sessionLog.WriteLine($"============== {count} / {_sessions.Count} sessions ==============");
+            }
+        }
+
+        public void SendMove_v3()
+        {
+            lock (_lock)
+            {
+                int count = 0;
+                foreach (ServerSession session in _sessions)
+                {
+                    if (session.SessionId == 0 || !Players.ContainsKey(session.SessionId))
+                    {
+                        continue;
+                    }
+                    float speed = MathF.Sqrt(Players[session.SessionId].velX * Players[session.SessionId].velX + Players[session.SessionId].velZ * Players[session.SessionId].velZ);
+                    float theta = 0.0f;
+                    if (Players[session.SessionId].velX != 0)
+                    {
+                        theta = MathF.Atan2(Players[session.SessionId].velZ / speed, Players[session.SessionId].velX / speed) / (2 * MathF.PI);
+                    }
+                    C_MOVE_V3 packet = new C_MOVE_V3
+                    {
+                        Theta = theta,
+                        Speed = speed,
+                        TimeStamp = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds
+                    };
+                    ArraySegment<byte> sendBuffer = Utils.SerializePacket(PacketType.PKT_C_MOVE_V3, packet);
+                    session.Send(sendBuffer);
+                    count++;
+                    sessionLog.WriteLine($"session {session.SessionId} send C_Move_V3");
+                }
+                sessionLog.WriteLine($"============== {count} / {_sessions.Count} sessions ==============");
+            }
+        }
+
+        public void SendPos()
+        {
+            lock (_lock)
+            {
+                int count = 0;
+                foreach (ServerSession session in _sessions)
+                {
+                    if (session.SessionId == 0 || !Players.ContainsKey(session.SessionId))
+                    {
+                        continue;
+                    }
+                    C_POS packet = new C_POS
+                    {
+                        PosX = Players[session.SessionId].posX,
+                        PosY = Players[session.SessionId].posY,
+                        PosZ = Players[session.SessionId].posZ,
+                        TimeStamp = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds
+                    };
+                    ArraySegment<byte> sendBuffer = Utils.SerializePacket(PacketType.PKT_C_POS, packet);
+                    session.Send(sendBuffer);
+                    count++;
+                    sessionLog.WriteLine($"session {session.SessionId} send C_Pos");
                 }
                 sessionLog.WriteLine($"============== {count} / {_sessions.Count} sessions ==============");
             }

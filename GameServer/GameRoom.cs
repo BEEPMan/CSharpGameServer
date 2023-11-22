@@ -22,14 +22,14 @@ namespace GameServer
         List<ClientSession> _sessions = new List<ClientSession>();
         object _lock = new object();
         JobQueue _jobQueue = new JobQueue();
-        List<byte[]> _pendingList = new List<byte[]>();
+        List<ArraySegment<byte>> _pendingList = new List<ArraySegment<byte>>();
 
         public void Push(Action job)
         {
             _jobQueue.Push(job);
         }
 
-        public void Broadcast(byte[] packet)
+        public void Broadcast(ArraySegment<byte> packet)
         {
             _pendingList.Add(packet);
 
@@ -62,7 +62,7 @@ namespace GameServer
                 PlayerInfo playerInfo = new PlayerInfo { playerId = kv.Key, posX = player.posX, posY = player.posY, posZ = player.posZ };
                 players.Players.Add(playerInfo);
             }
-            byte[] playerListPacket = Utils.SerializePacket(PacketType.PKT_S_PLAYERLIST, players);
+            ArraySegment<byte> playerListPacket = Utils.SerializePacket(PacketType.PKT_S_PLAYERLIST, players);
             session.Send(playerListPacket);                
         }
 

@@ -20,6 +20,8 @@ namespace ServerCore
         PKT_S_MOVE_V2 = 10,
         PKT_C_MOVE_V3 = 11,
         PKT_S_MOVE_V3 = 12,
+        PKT_C_POS = 13,
+        PKT_S_POS = 14,
     }
 
     [ProtoBuf.ProtoContract]
@@ -212,8 +214,40 @@ namespace ServerCore
 
         [ProtoBuf.ProtoMember(3)]
         public float Speed { get; set; }
+    }
+
+    [ProtoBuf.ProtoContract]
+    public class C_POS
+    {
+        [ProtoBuf.ProtoMember(1)]
+        public float PosX { get; set; }
+
+        [ProtoBuf.ProtoMember(2)]
+        public float PosY { get; set; }
+
+        [ProtoBuf.ProtoMember(3)]
+        public float PosZ { get; set; }
 
         [ProtoBuf.ProtoMember(4)]
+        public long TimeStamp { get; set; }
+    }
+
+    [ProtoBuf.ProtoContract]
+    public class S_POS
+    {
+        [ProtoBuf.ProtoMember(1)]
+        public int PlayerId { get; set; }
+
+        [ProtoBuf.ProtoMember(2)]
+        public float PosX { get; set; }
+
+        [ProtoBuf.ProtoMember(3)]
+        public float PosY { get; set; }
+
+        [ProtoBuf.ProtoMember(4)]
+        public float PosZ { get; set; }
+
+        [ProtoBuf.ProtoMember(5)]
         public long TimeStamp { get; set; }
     }
 }

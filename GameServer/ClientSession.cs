@@ -73,6 +73,20 @@ namespace GameServer
                         Handle_C_MOVE_V2(data);
                     }
                     break;
+                case PacketType.PKT_C_MOVE_V3:
+                    using (MemoryStream dataStream = new MemoryStream(dataBytes))
+                    {
+                        C_MOVE_V3 data = Serializer.Deserialize<C_MOVE_V3>(dataStream);
+                        Handle_C_MOVE_V3(data);
+                    }
+                    break;
+                case PacketType.PKT_C_POS:
+                    using (MemoryStream dataStream = new MemoryStream(dataBytes))
+                    {
+                        C_POS data = Serializer.Deserialize<C_POS>(dataStream);
+                        Handle_C_POS(data);
+                    }
+                    break;
                 default:
                     Console.WriteLine($"Unknown packet type: {header.PacketType}");
                     break;
@@ -82,7 +96,7 @@ namespace GameServer
         public void Handle_C_LEAVEGAME(C_LEAVEGAME data)
         {
             S_LEAVEGAME packet = new S_LEAVEGAME { PlayerId = SessionId };
-            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_LEAVEGAME, packet);
+            ArraySegment<byte> sendBuffer = Utils.SerializePacket(PacketType.PKT_S_LEAVEGAME, packet);
             GameRoom room = Room;
             room.Push(() => { room.Broadcast(sendBuffer); });
 
@@ -99,7 +113,7 @@ namespace GameServer
         public void Handle_C_CHAT(C_CHAT data)
         {
             S_CHAT packet = new S_CHAT { PlayerId = SessionId, Chat = data.Chat };
-            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_CHAT, packet);
+            ArraySegment<byte> sendBuffer = Utils.SerializePacket(PacketType.PKT_S_CHAT, packet);
             GameRoom room = Room;
             room.Push(() => { room.Broadcast(sendBuffer); });
 
@@ -119,7 +133,7 @@ namespace GameServer
                 PosZ = data.PosZ,
                 TimeStamp = data.TimeStamp
             };
-            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_MOVE, packet);
+            ArraySegment<byte> sendBuffer = Utils.SerializePacket(PacketType.PKT_S_MOVE, packet);
             room.Push(() => { room.Broadcast(sendBuffer); });
         }
 
@@ -139,7 +153,37 @@ namespace GameServer
                 VelZ = data.VelZ,
                 TimeStamp = data.TimeStamp
             };
-            byte[] sendBuffer = Utils.SerializePacket(PacketType.PKT_S_MOVE_V2, packet);
+            ArraySegment<byte> sendBuffer = Utils.SerializePacket(PacketType.PKT_S_MOVE_V2, packet);
+            room.Push(() => { room.Broadcast(sendBuffer); });
+        }
+
+        public void Handle_C_MOVE_V3(C_MOVE_V3 data)
+        {
+            GameRoom room = Room;
+            S_MOVE_V3 packet = new S_MOVE_V3
+            {
+                PlayerId = SessionId,
+                Theta = data.Theta,
+                Speed = data.Speed
+            };
+            ArraySegment<byte> sendBuffer = Utils.SerializePacket(PacketType.PKT_S_MOVE_V3, packet);
+            room.Push(() => { room.Broadcast(sendBuffer); });
+        }
+
+        public void Handle_C_POS(C_POS data)
+        {
+            GameRoom room = Room;
+            room.Push(() => { room.Move(SessionId, data.PosX, data.PosY, data.PosZ); });
+
+            S_POS packet = new S_POS
+            {
+                PlayerId = SessionId,
+                PosX = data.PosX,
+                PosY = data.PosY,
+                PosZ = data.PosZ,
+                TimeStamp = data.TimeStamp
+            };
+            ArraySegment<byte> sendBuffer = Utils.SerializePacket(PacketType.PKT_S_POS, packet);
             room.Push(() => { room.Broadcast(sendBuffer); });
         }
 
@@ -153,7 +197,7 @@ namespace GameServer
             room.Push(() => { room.Enter(this, x, 1.0f, z); });
 
             S_ENTERGAME enter = new S_ENTERGAME { PlayerId = SessionId, PosX = x, PosY = 1.0f, PosZ = z };
-            byte[] enterGamePacket = Utils.SerializePacket(PacketType.PKT_S_ENTERGAME, enter);
+            ArraySegment<byte> enterGamePacket = Utils.SerializePacket(PacketType.PKT_S_ENTERGAME, enter);
             room.Push(() => { room.Broadcast(enterGamePacket); });
 
             Console.WriteLine($"[{endPoint}] OnConnected");
