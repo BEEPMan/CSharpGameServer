@@ -23,6 +23,7 @@ namespace GameServer
         object _lock = new object();
         JobQueue _jobQueue = new JobQueue();
         List<ArraySegment<byte>> _pendingList = new List<ArraySegment<byte>>();
+        Dictionary<int, bool> _waitingList = new Dictionary<int, bool>();
 
         public void Push(Action job)
         {
@@ -32,20 +33,34 @@ namespace GameServer
         public void Broadcast(ArraySegment<byte> packet)
         {
             _pendingList.Add(packet);
-
             //foreach (ClientSession s in _sessions)
             //{
             //    s.Send(packet);
             //}
         }
 
+        public void BroadcastMove(ArraySegment<byte> packet, int playerId)
+        {
+            if (_waitingList.ContainsKey(playerId))
+            {
+                return;
+            }
+            _pendingList.Add(packet);
+            _waitingList.Add(playerId, true);
+        }
+
         public void Flush()
         {
-            foreach (ClientSession s in _sessions)
+            Parallel.ForEach(_sessions, s =>
             {
                 s.Send(_pendingList);
-            }
+            });
+            //foreach (ClientSession s in _sessions)
+            //{
+            //    s.Send(_pendingList);
+            //}
             _pendingList.Clear();
+            _waitingList.Clear();
         }
 
         public void Enter(ClientSession session, float x, float y, float z)

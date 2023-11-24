@@ -39,23 +39,5 @@ namespace GameServer
         {
             _sessions.Remove(session.SessionId);
         }
-
-        public void BroadCast(byte[] data)
-        {
-            foreach (int index in _sessions.Keys)
-            {
-                _sessions[index].Send(data);
-            }
-        }
-
-        public void BroadCasttoOthers(byte[] data, int sessionId)
-        {
-            foreach (int index in _sessions.Keys)
-            {
-                if (index == sessionId)
-                    continue;
-                _sessions[index].Send(data);
-            }
-        }
     }
 }

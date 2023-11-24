@@ -198,9 +198,6 @@ namespace ServerCore
 
         [ProtoBuf.ProtoMember(2)]
         public float Speed { get; set; }
-
-        [ProtoBuf.ProtoMember(3)]
-        public long TimeStamp { get; set; }
     }
 
     [ProtoBuf.ProtoContract]
@@ -229,6 +226,15 @@ namespace ServerCore
         public float PosZ { get; set; }
 
         [ProtoBuf.ProtoMember(4)]
+        public float VelX { get; set; }
+
+        [ProtoBuf.ProtoMember(5)]
+        public float VelY { get; set; }
+
+        [ProtoBuf.ProtoMember(6)]
+        public float VelZ { get; set; }
+
+        [ProtoBuf.ProtoMember(7)]
         public long TimeStamp { get; set; }
     }
 
@@ -248,6 +254,15 @@ namespace ServerCore
         public float PosZ { get; set; }
 
         [ProtoBuf.ProtoMember(5)]
+        public float VelX { get; set; }
+
+        [ProtoBuf.ProtoMember(6)]
+        public float VelY { get; set; }
+
+        [ProtoBuf.ProtoMember(7)]
+        public float VelZ { get; set; }
+
+        [ProtoBuf.ProtoMember(8)]
         public long TimeStamp { get; set; }
     }
 }

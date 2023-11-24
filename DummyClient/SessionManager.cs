@@ -107,7 +107,6 @@ namespace DummyClient
                     {
                         Theta = theta,
                         Speed = speed,
-                        TimeStamp = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds
                     };
                     ArraySegment<byte> sendBuffer = Utils.SerializePacket(PacketType.PKT_C_MOVE_V3, packet);
                     session.Send(sendBuffer);
@@ -134,6 +133,9 @@ namespace DummyClient
                         PosX = Players[session.SessionId].posX,
                         PosY = Players[session.SessionId].posY,
                         PosZ = Players[session.SessionId].posZ,
+                        VelX = Players[session.SessionId].velX,
+                        VelY = Players[session.SessionId].velY,
+                        VelZ = Players[session.SessionId].velZ,
                         TimeStamp = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds
                     };
                     ArraySegment<byte> sendBuffer = Utils.SerializePacket(PacketType.PKT_C_POS, packet);
