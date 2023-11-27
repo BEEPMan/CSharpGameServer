@@ -183,9 +183,11 @@ namespace GameServer
 
         public override void OnConnected(EndPoint endPoint)
         {
-            Random rand = new Random();
-            float x = (float)rand.NextDouble() * 20 - 10;
-            float z = (float)rand.NextDouble() * 20 - 10;
+            //Random rand = new Random();
+            //float x = (float)rand.NextDouble() * 20 - 10;
+            //float z = (float)rand.NextDouble() * 20 - 10;
+            float x = 0.0f;
+            float z = 0.0f;
 
             Program.Room.Push(() => { Program.Room.Enter(this, x, 1.0f, z); });
 

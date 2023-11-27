@@ -22,7 +22,7 @@ namespace DummyClient
             public float velZ;
         }
 
-        public static int DUMMY_COUNT = 99;
+        public static int DUMMY_COUNT = 19;
 
         public static Dictionary<int, Queue<MoveEvent>> moveEvents = new Dictionary<int, Queue<MoveEvent>>();
 
@@ -43,6 +43,9 @@ namespace DummyClient
 
             CreateMoveEvents();
 
+            Console.WriteLine("Choose protocol to start.");
+            int protocol = int.Parse(Console.ReadLine());
+
             while (Console.ReadKey().Key != ConsoleKey.S)
             {
                 Thread.Sleep(100);
@@ -51,36 +54,69 @@ namespace DummyClient
             Thread thread = new Thread(MoveWork);
             thread.Start();
 
-            int count = 0;
-            while (true)
+            switch(protocol)
             {
-                try
-                {
-                    ////////// SendMove //////////
-                    //SessionManager.Instance.SendMove();
-                    //////////////////////////////
-                    ////////// SendMove_v2 //////////
-                    //SessionManager.Instance.SendMove_v2();
-                    //////////////////////////////
-                    ////////// SendMove_v3 //////////
-                    count++;
-                    if (count == 4)
+                case 1:
+                    while (true)
                     {
-                        SessionManager.Instance.SendPos();
-                        count = 0;
+                        try
+                        {
+                            ////////// SendMove //////////
+                            SessionManager.Instance.SendMove();
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e.ToString());
+                            break;
+                        }
+                        Thread.Sleep(250);
                     }
-                    else
-                    {
-                        SessionManager.Instance.SendMove_v3();
-                    }
-                    /////////////////////////////////
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.ToString());
                     break;
-                }
-                Thread.Sleep(250);
+                case 2:
+                    while (true)
+                    {
+                        try
+                        {
+                            ////////// SendMove_v2 //////////
+                            SessionManager.Instance.SendMove_v2();
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e.ToString());
+                            break;
+                        }
+                        Thread.Sleep(250);
+                    }
+                    break;
+                case 3:
+                    int count = 0;
+                    while (true)
+                    {
+                        try
+                        {
+                            ////////// SendMove_v3 //////////
+                            count++;
+                            if (count == 4)
+                            {
+                                SessionManager.Instance.SendPos();
+                                count = 0;
+                            }
+                            else
+                            {
+                                SessionManager.Instance.SendMove_v3();
+                            }
+                            /////////////////////////////////
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e.ToString());
+                            break;
+                        }
+                        Thread.Sleep(250);
+                    }
+                    break;
+                default:
+                    break;
             }
 
             thread.Join();
